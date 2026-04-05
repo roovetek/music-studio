@@ -1,5 +1,5 @@
 import { Play, Pause, Plus, Minus } from 'lucide-react';
-import { useMetronome } from '../hooks/useMetronome';
+import { useMetronome } from '../../hooks/metronome/useMetronome';
 
 export const Metronome = () => {
   const { isPlaying, bpm, setBpm, togglePlay } = useMetronome();

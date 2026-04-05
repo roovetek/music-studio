@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Home } from './components/Home';
-import { Metronome } from './components/Metronome';
-import { MusicFusionLab } from './components/MusicFusionLab';
+import { Metronome } from './components/metronome/Metronome';
+import { MusicFusionLab } from './components/musicFusion/MusicFusionLab';
 
 type Page = 'home' | 'metronome' | 'fusion-lab';
 
