@@ -1,13 +1,13 @@
 /** Base URL for the Fusion FastAPI service (see fusion/README.md). */
 export function getFusionApiBase(): string {
-  return (import.meta.env.VITE_FUSION_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://127.0.0.1:8000';
+  return (import.meta.env.VITE_FUSION_API_URL as string | undefined)?.replace(/\/$/, '') || 'http://127.0.0.1:8001';
 }
 
 /** Max upload size for client-side checks (must stay aligned with FUSION_MAX_UPLOAD_MB on the API). */
 export function getMaxUploadBytes(): number {
   const raw = import.meta.env.VITE_MAX_UPLOAD_MB;
-  const mb = raw != null && raw !== '' ? Number(raw) : 50;
-  return (Number.isFinite(mb) && mb > 0 ? mb : 50) * 1024 * 1024;
+  const mb = raw != null && raw !== '' ? Number(raw) : 10;
+  return (Number.isFinite(mb) && mb > 0 ? mb : 10) * 1024 * 1024;
 }
 
 export interface AudioSegment {

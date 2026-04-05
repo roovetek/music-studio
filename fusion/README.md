@@ -20,10 +20,10 @@ Local HTTP service that runs the [All-In-One Music Structure Analyzer](https://p
 
 ```bash
 cd fusion
-uvicorn main:app --reload --host 127.0.0.1 --port 8000
+uvicorn main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-- **CORS:** By default, `http://localhost:5173` and `http://127.0.0.1:5173` are allowed. Override with `FUSION_CORS_ORIGINS` (comma-separated), e.g. `http://localhost:5173,https://yourapp.example`.
+- **CORS:** By default, `http://localhost:5174` and `http://127.0.0.1:5174` are allowed (match Vite `server.port`). Override with `FUSION_CORS_ORIGINS` (comma-separated), e.g. `http://localhost:5174,https://yourapp.example`.
 
 ## Where uploads go
 
@@ -31,8 +31,8 @@ Files are **not** saved to an application data folder. Each upload is streamed i
 
 ## Limits and allowed types
 
-- **Extensions:** `.mp3` and `.wav` only (same as the Vite client).
-- **Size:** **`FUSION_MAX_UPLOAD_MB`** (default **50**) per file. Oversize uploads get HTTP **413** after the temp file is written (keep limits aligned with the frontend).
+- **Extensions:** `.mp3` and `.wav` only (same as the Vite client). MIDI (`.mid` / `.midi`) is not accepted — `allin1` analyzes audio, not MIDI note data.
+- **Size:** **`FUSION_MAX_UPLOAD_MB`** (default **10**) per file. Oversize uploads get HTTP **413** after the temp file is written (keep limits aligned with the frontend).
 
 ## Endpoints
 
@@ -44,10 +44,12 @@ Responses include `bpm` and `segments` with `label`, `start`, and `end` (seconds
 
 ## Frontend (Vite)
 
+The dev server listens on **5174** (see `vite.config.ts` in the repo root). Run `npm run dev` from the project root.
+
 Only env vars prefixed with **`VITE_`** are exposed to the browser.
 
-- **`VITE_FUSION_API_URL`** — API base (no trailing slash), e.g. `http://127.0.0.1:8000`. Default in code if unset: `http://127.0.0.1:8000`.
-- **`VITE_MAX_UPLOAD_MB`** — max upload size in MB for client-side checks (default **50**). Should match **`FUSION_MAX_UPLOAD_MB`** on the API.
+- **`VITE_FUSION_API_URL`** — API base (no trailing slash), e.g. `http://127.0.0.1:8001`. Default in code if unset: `http://127.0.0.1:8001`.
+- **`VITE_MAX_UPLOAD_MB`** — max upload size in MB for client-side checks (default **10**). Should match **`FUSION_MAX_UPLOAD_MB`** on the API.
 
 ## Optional: Replicate (no local GPU)
 

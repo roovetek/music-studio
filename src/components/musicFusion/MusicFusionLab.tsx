@@ -89,7 +89,9 @@ export const MusicFusionLab = ({ onBack }: MusicFusionLabProps) => {
     if (!file) return;
 
     if (!isAllowedAudioFile(file)) {
-      setAnalysisError(`Use .mp3 or .wav only (got ${fileExtensionLower(file.name) || 'unknown'})`);
+      setAnalysisError(
+        `Audio only: .mp3 or .wav (max ${maxMb} MB). MIDI and other formats are not supported. Got: ${fileExtensionLower(file.name) || 'unknown'}`,
+      );
       return;
     }
     if (file.size > maxBytes) {
@@ -300,7 +302,7 @@ export const MusicFusionLab = ({ onBack }: MusicFusionLabProps) => {
                     </p>
                   ) : (
                     <p className="text-sm text-slate-500">
-                      .mp3 or .wav, max {maxMb} MB
+                      .mp3 / .wav · max {maxMb} MB · no MIDI
                     </p>
                   )}
                 </div>

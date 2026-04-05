@@ -24,14 +24,14 @@ ALLOWED_EXTENSIONS = frozenset({".mp3", ".wav"})
 
 
 def _max_upload_bytes() -> int:
-    mb = float(os.environ.get("FUSION_MAX_UPLOAD_MB", "50"))
+    mb = float(os.environ.get("FUSION_MAX_UPLOAD_MB", "10"))
     return int(mb * 1024 * 1024)
 
 
 def _cors_origins() -> list[str]:
     raw = os.environ.get(
         "FUSION_CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173",
+        "http://localhost:5174,http://127.0.0.1:5174",
     )
     return [o.strip() for o in raw.split(",") if o.strip()]
 
