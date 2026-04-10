@@ -221,7 +221,7 @@ export const CricketAnalysis = ({ onBack }: CricketAnalysisProps) => {
 
     addDelivery(demoDelivery);
 
-    if (isOnline && activeMatch) {
+    if (isOnline && activeMatch && supabase) {
       try {
         incrementPendingSync();
         await supabase.from('deliveries').insert({

@@ -1,6 +1,9 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
+  /** Optional cloud sync for cricket deliveries (see Supabase migration). */
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_FUSION_API_URL?: string;
   /** Max upload size in MB (default 10). Must match FUSION_MAX_UPLOAD_MB on the Fusion API. */
   readonly VITE_MAX_UPLOAD_MB?: string;
