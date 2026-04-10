@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize2, Upload, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Play, Pause, Volume2, VolumeX, Maximize2, Upload, Plus, RefreshCw, Cpu } from 'lucide-react';
 import { VideoOverlay } from './VideoOverlay';
 import { ReasoningFeed } from './ReasoningFeed';
 import { BallTimeline } from './BallTimeline';
 import { ScorePanel } from './ScorePanel';
 import { useMatchStore } from '../../store/useMatchStore';
 import { supabase } from '../../lib/supabase';
-import type { ReasoningEntry } from '../../lib/supabase';
+import type { ReasoningEntry, BoundingBox, SkeletonKeypoint, TrajectoryPoint } from '../../lib/supabase';
+import { useCricketVisionStream } from '../../hooks/cricket/useCricketVisionStream';
 
 interface CricketAnalysisProps {
   onBack: () => void;
@@ -67,6 +68,8 @@ export const CricketAnalysis = ({ onBack }: CricketAnalysisProps) => {
   const [duration, setDuration] = useState(0);
   const [videoSize, setVideoSize] = useState({ width: 640, height: 360 });
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [localStreamKey, setLocalStreamKey] = useState(0);
   const [showAddDelivery, setShowAddDelivery] = useState(false);
 
   const {
@@ -93,6 +96,29 @@ export const CricketAnalysis = ({ onBack }: CricketAnalysisProps) => {
     incrementPendingSync,
     decrementPendingSync,
   } = useMatchStore();
+
+  const onBackendOverlay = useCallback(
+    (boxes: BoundingBox[], keypoints: SkeletonKeypoint[], trajectory: TrajectoryPoint[]) => {
+      setActiveOverlayData(boxes, keypoints, trajectory);
+    },
+    [setActiveOverlayData]
+  );
+
+  const onBackendReasoning = useCallback(
+    (text: string) => {
+      appendReasoning({ message: text, timestamp: Date.now(), type: 'analysis' });
+    },
+    [appendReasoning]
+  );
+
+  useCricketVisionStream({
+    file: uploadedFile,
+    videoSize,
+    streamKey: localStreamKey,
+    onOverlay: onBackendOverlay,
+    onReasoning: onBackendReasoning,
+    onAnalyzing: setIsAnalyzing,
+  });
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -162,10 +188,18 @@ export const CricketAnalysis = ({ onBack }: CricketAnalysisProps) => {
     if (!file) return;
     const url = URL.createObjectURL(file);
     setVideoSrc(url);
+    setUploadedFile(file);
+    setLocalStreamKey(0);
     setIsPlaying(false);
     clearOverlayData();
     clearReasoning();
   }, [clearOverlayData, clearReasoning]);
+
+  const startLocalBackendStream = useCallback(() => {
+    if (!uploadedFile) return;
+    clearReasoning();
+    setLocalStreamKey((k) => k + 1);
+  }, [uploadedFile, clearReasoning]);
 
   const handleAddDemoDelivery = useCallback(async () => {
     const demoDelivery = {
@@ -354,7 +388,17 @@ export const CricketAnalysis = ({ onBack }: CricketAnalysisProps) => {
                     ) : (
                       <RefreshCw className="w-3.5 h-3.5" />
                     )}
-                    Run AI Analysis
+                    Demo Analysis
+                  </button>
+
+                  <button
+                    onClick={startLocalBackendStream}
+                    disabled={!uploadedFile || isAnalyzing}
+                    title="Requires cricket-api on port 8002 and Ollama"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-violet-500/20 border border-violet-500/40 text-violet-300 text-xs font-medium hover:bg-violet-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Cpu className="w-3.5 h-3.5" />
+                    Local GPU Stream
                   </button>
 
                   <button
