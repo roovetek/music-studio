@@ -1,7 +1,7 @@
-import { Music, Waves } from 'lucide-react';
+import { Music, Waves, Video } from 'lucide-react';
 
 interface HomeProps {
-  onNavigate: (page: 'metronome' | 'fusion-lab') => void;
+  onNavigate: (page: 'metronome' | 'fusion-lab' | 'cricket-analysis') => void;
 }
 
 export const Home = ({ onNavigate }: HomeProps) => {
@@ -16,7 +16,7 @@ export const Home = ({ onNavigate }: HomeProps) => {
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid md:grid-cols-3 gap-6">
         <button
           onClick={() => onNavigate('metronome')}
           className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-8 text-left transition-all duration-300 hover:scale-105 hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/20"
@@ -55,6 +55,26 @@ export const Home = ({ onNavigate }: HomeProps) => {
 
             <p className="text-slate-400 leading-relaxed">
               Upload and analyze audio files. Extract BPM, key, and duration from your tracks.
+            </p>
+          </div>
+        </button>
+        <button
+          onClick={() => onNavigate('cricket-analysis')}
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-8 text-left transition-all duration-300 hover:scale-105 hover:border-rose-500/50 hover:shadow-xl hover:shadow-rose-500/20"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/0 to-rose-500/0 group-hover:from-rose-500/10 group-hover:to-transparent transition-all duration-300" />
+
+          <div className="relative">
+            <div className="w-16 h-16 rounded-xl bg-rose-500/20 flex items-center justify-center mb-6 group-hover:bg-rose-500/30 transition-colors">
+              <Video className="w-8 h-8 text-rose-400" />
+            </div>
+
+            <h2 className="text-2xl font-bold text-white mb-3">
+              Video Analysis
+            </h2>
+
+            <p className="text-slate-400 leading-relaxed">
+              AI-powered cricket analysis with pose estimation, ball tracking, and real-time scoring.
             </p>
           </div>
         </button>
