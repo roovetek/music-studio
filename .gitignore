@@ -7,8 +7,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
-dist-ssr
+# dist/ and dist-ssr/ are not ignored so you can commit build output (e.g. deploy branch).
+# Run `npm run build` before committing.
 *.local
 
 .vscode/*
