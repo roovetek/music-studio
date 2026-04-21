@@ -1,8 +1,10 @@
 import { Play, Pause, Plus, Minus } from 'lucide-react';
 import { useMetronome } from '../../hooks/metronome/useMetronome';
+import { useState } from 'react';
 
 export const Metronome = () => {
-  const { isPlaying, bpm, setBpm, togglePlay } = useMetronome();
+  const { isPlaying, bpm, setBpm, togglePlay, soundType, setSoundType } = useMetronome();
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const adjustBpm = (delta: number) => {
     setBpm((prev) => Math.max(30, Math.min(300, prev + delta)));
@@ -13,7 +15,7 @@ export const Metronome = () => {
       <div className="glass-panel p-8 rounded-3xl">
         <div className="text-center space-y-8">
           <h1 className="text-2xl font-light text-slate-200 tracking-wider">
-            METRONOME
+            CLASSIC METRONOME
           </h1>
 
           <div className="bpm-display">
@@ -79,6 +81,28 @@ export const Metronome = () => {
               <Play className="w-8 h-8" fill="currentColor" />
             )}
           </button>
+
+          <button
+            onClick={() => setShowDropdown((prev) => !prev)}
+            className="dropdown-toggle-btn"
+            aria-label="Toggle Sound Dropdown"
+          >
+            Select Sound
+          </button>
+
+          {showDropdown && (
+            <div className="dropdown">
+              <select
+                value={soundType}
+                onChange={(e) => setSoundType(e.target.value as 'Beep' | 'Click' | 'Woodblock')}
+                className="dropdown-select"
+              >
+                <option value="Beep">Beep</option>
+                <option value="Click">Click</option>
+                <option value="Woodblock">Woodblock</option>
+              </select>
+            </div>
+          )}
 
           {isPlaying && (
             <div className="flex justify-center gap-2">

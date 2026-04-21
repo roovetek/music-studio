@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 export const useMetronome = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(120);
+  const [soundType, setSoundType] = useState<'Beep' | 'Click' | 'Woodblock'>('Beep');
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const nextNoteTimeRef = useRef(0);
@@ -31,7 +32,15 @@ export const useMetronome = () => {
     gainNode.connect(audioContext.destination);
 
     const isAccent = currentBeatRef.current % 4 === 0;
-    oscillator.frequency.value = isAccent ? 1200 : 800;
+
+    // Adjust frequency based on sound type
+    if (soundType === 'Beep') {
+      oscillator.frequency.value = isAccent ? 1200 : 800;
+    } else if (soundType === 'Click') {
+      oscillator.frequency.value = isAccent ? 1000 : 600;
+    } else if (soundType === 'Woodblock') {
+      oscillator.frequency.value = isAccent ? 800 : 400;
+    }
 
     gainNode.gain.value = 0.3;
     gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
@@ -47,7 +56,6 @@ export const useMetronome = () => {
     if (!audioContext) return;
 
     const scheduleAheadTime = 0.1;
-
     while (nextNoteTimeRef.current < audioContext.currentTime + scheduleAheadTime) {
       scheduleNote(nextNoteTimeRef.current);
       const secondsPerBeat = 60.0 / bpm;
@@ -92,5 +100,7 @@ export const useMetronome = () => {
     bpm,
     setBpm,
     togglePlay,
+    soundType,
+    setSoundType,
   };
 };

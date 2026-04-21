@@ -23,3 +23,48 @@ dist-ssr
 .env
 __pycache__/
 *.py[cod]
+
+# Stray Android build artifacts (e.g. copies outside android/)
+*.apk
+*.aab
+
+# --- Android (Capacitor / Gradle) ---
+android/.gradle/
+android/**/build/
+android/**/local.properties
+android/**/*.iml
+android/.navigation/
+android/captures/
+android/**/.externalNativeBuild
+android/**/.cxx/
+android/**/*.hprof
+android/**/app/src/main/assets/public
+android/**/app/src/main/assets/capacitor.config.json
+android/**/app/src/main/assets/capacitor.plugins.json
+android/**/app/src/main/res/xml/config.xml
+android/capacitor-cordova-android-plugins/
+
+# --- iOS (Capacitor) ---
+ios/App/build
+ios/App/Pods
+ios/App/output
+ios/App/App/public
+ios/DerivedData
+ios/xcuserdata
+ios/capacitor-cordova-ios-plugins
+ios/App/App/capacitor.config.json
+ios/App/App/config.xml
+
+# --- iOS CapApp-SPM (Swift package manager) ---
+ios/App/CapApp-SPM/.build
+ios/App/CapApp-SPM/Packages
+ios/App/CapApp-SPM/*.xcodeproj
+ios/App/CapApp-SPM/xcuserdata/
+ios/App/CapApp-SPM/DerivedData/
+ios/App/CapApp-SPM/.swiftpm/config/registries.json
+ios/App/CapApp-SPM/.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+ios/App/CapApp-SPM/.netrc
+ios/debug.xcconfig
+ios/App/CapApp-SPM/Package.swift
+ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift
+ios/App/CapApp-SPM/README.md
