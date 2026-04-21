@@ -9,6 +9,35 @@ Web + Capacitor shell for the metronome tools (classic and studio).
 - **Icons:** Regenerate PNGs under `public/icons/` with `npm run generate:icons` (requires devDependency `sharp`). Commit updated icons when the branding changes.
 - **Deploy:** Host `dist/` behind **HTTPS** so install prompts and service workers work.
 
+### GitHub Pages (deploy branch)
+
+**Prereqs**
+
+- Repo **Settings → Pages**: source = your **`deploy`** branch (or whichever branch contains the built site), folder **`/ (root)`** if you publish the contents of `dist/` at the branch root.
+- **Project site URL** is `https://<user>.github.io/<repo>/` — Vite must use base `/<repo>/`. **User site** (`<user>.github.io` repository) uses base `/`.
+
+**Build for Pages**
+
+- **Locally** (replace `music-studio` with your repository name):
+
+  ```bash
+  VITE_BASE_PATH=/music-studio/ npm run build:pages
+  ```
+
+  This runs `vite build` and copies `dist/index.html` → `dist/404.html` (helps with SPA fallbacks on GitHub Pages).
+
+- **GitHub Actions**: `GITHUB_REPOSITORY` is set automatically — a plain `npm run build:pages` in CI picks up `/<repo>/` without `VITE_BASE_PATH`.
+
+**Capacitor / local dev**
+
+- `npm run dev` and `npm run build` (no env) use base **`/`** — correct for local preview and for **`npm run build:mobile`**. Do **not** leave `VITE_BASE_PATH` exported in your shell when building the Android app, or asset paths will be wrong for the WebView.
+
+**Automatic deploy (Actions)**
+
+- On every push to **`main`** (or **`master`**), [`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml) runs `npm run build:pages` (so `GITHUB_REPOSITORY` sets the right base) and pushes **`dist/`** to branch **`deploy`** with [peaceiris/actions-gh-pages](https://github.com/peaceiris/actions-gh-pages).
+- In the repo: **Settings → Pages → Build and deployment → Branch** = **`deploy`**, folder **`/ (root)`**.
+- First run: allow **Actions** permissions (**Settings → Actions → General → Workflow permissions**: read and write).
+
 ## Android (Capacitor)
 
 1. `npm run build:mobile` — builds the Vite app and runs `cap sync` so `android/app/src/main/assets/public` matches `dist/`.

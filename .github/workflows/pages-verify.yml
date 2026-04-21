@@ -1,0 +1,25 @@
+# Ensures `npm run build:pages` works with GitHub Pages base (GITHUB_REPOSITORY).
+# Does not run on `deploy` — that branch may only contain built static files.
+name: Pages build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build for GitHub Pages
+        run: npm run build:pages
