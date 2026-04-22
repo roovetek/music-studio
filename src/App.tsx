@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Home } from './components/Home';
-import { Metronome } from './components/metronome/Metronome';
 import { AdvancedMetronome } from './components/metronome/AdvancedMetronome';
 
-type Page = 'home' | 'metronome-simple' | 'metronome-full';
+type Page = 'home' | 'metronome-full';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -12,19 +11,6 @@ function App() {
     switch (currentPage) {
       case 'home':
         return <Home onNavigate={setCurrentPage} />;
-      case 'metronome-simple':
-        return (
-          <div className="w-full">
-            <button
-              type="button"
-              onClick={() => setCurrentPage('home')}
-              className="mb-8 text-slate-400 hover:text-white transition-colors"
-            >
-              ← Back to Home
-            </button>
-            <Metronome />
-          </div>
-        );
       case 'metronome-full':
         return (
           <div className="w-full">

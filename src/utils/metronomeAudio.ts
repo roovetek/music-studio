@@ -80,6 +80,18 @@ class MetronomeAudioEngine {
     return this.audioContext;
   }
 
+  getContext(): AudioContext {
+    return this.getAudioContext();
+  }
+
+  async resume() {
+    const ctx = this.getAudioContext();
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+    return ctx;
+  }
+
   private create808Rimshot(ctx: AudioContext, time: number, accentLevel: 'none' | 'normal' | 'first' = 'none') {
     const volume = accentLevel === 'first' ? 1.5 : accentLevel === 'normal' ? 1.2 : 0.5;
     const frequency = accentLevel === 'first' ? 1800 : accentLevel === 'normal' ? 1500 : 1200;
@@ -412,9 +424,8 @@ class MetronomeAudioEngine {
 
 
 
-  playSound(soundType: MetronomeSound, accentLevel: 'none' | 'normal' | 'first' = 'none') {
+  playSoundAt(soundType: MetronomeSound, time: number, accentLevel: 'none' | 'normal' | 'first' = 'none') {
     const ctx = this.getAudioContext();
-    const time = ctx.currentTime;
 
     switch (soundType) {
       case '808-rimshot':
@@ -445,6 +456,11 @@ class MetronomeAudioEngine {
         this.createAnalogBlip(ctx, time, accentLevel);
         break;
     }
+  }
+
+  playSound(soundType: MetronomeSound, accentLevel: 'none' | 'normal' | 'first' = 'none') {
+    const ctx = this.getAudioContext();
+    this.playSoundAt(soundType, ctx.currentTime, accentLevel);
   }
 }
 
