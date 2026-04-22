@@ -1,13 +1,38 @@
 import { Play, Plus, Minus, Music2, ChevronDown, Square } from 'lucide-react';
-import { useAdvancedMetronome } from '../../hooks/metronome/useAdvancedMetronome';
-import { soundOptions, metronomeAudio } from '../../utils/metronomeAudio';
+import {
+  meterPresets,
+  useAdvancedMetronome,
+  type MeterPresetId,
+} from '../../hooks/metronome/useAdvancedMetronome';
+import { soundGroupOrder, soundOptions, metronomeAudio } from '../../utils/metronomeAudio';
 import { useRef, useEffect, useState } from 'react';
+import {
+  MetronomeVisualizer,
+  type VisualizerMode,
+} from './MetronomeVisualizer';
 
 export const AdvancedMetronome = () => {
-  const [subdivisionMode, setSubdivisionMode] = useState<'quarter' | 'eighth' | 'sixteenth'>('quarter');
-  const { isPlaying, bpm, setBpm, togglePlay, currentSound, setCurrentSound, beatCount } =
-    useAdvancedMetronome(subdivisionMode);
+  const [meterPresetId, setMeterPresetId] = useState<MeterPresetId>('4-4-quarter');
+  const [leadInEnabled, setLeadInEnabled] = useState(true);
+  const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('tracker');
+  const {
+    isPlaying,
+    isLeadInActive,
+    leadInCount,
+    bpm,
+    setBpm,
+    togglePlay,
+    currentSound,
+    setCurrentSound,
+    beatCount,
+    currentStepTime,
+    secondsPerStep,
+    stepsPerBeat,
+    totalBeats,
+    meterLabel,
+  } = useAdvancedMetronome(meterPresetId, leadInEnabled);
   const [showSoundMenu, setShowSoundMenu] = useState(false);
+  const [soundQuery, setSoundQuery] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,10 +51,29 @@ export const AdvancedMetronome = () => {
   };
 
   const selectedSoundOption = soundOptions.find((s) => s.id === currentSound);
+  const normalizedQuery = soundQuery.trim().toLowerCase();
+  const filteredSoundOptions = soundOptions.filter((option) => {
+    if (!normalizedQuery) {
+      return true;
+    }
+
+    const searchableText = [option.name, option.description, option.mood, ...option.tags]
+      .join(' ')
+      .toLowerCase();
+
+    return searchableText.includes(normalizedQuery);
+  });
+  const groupedSoundOptions = soundGroupOrder
+    .map((group) => ({
+      group,
+      options: filteredSoundOptions.filter((option) => option.group === group),
+    }))
+    .filter((section) => section.options.length > 0);
 
   const handleSoundSelect = (soundId: typeof currentSound) => {
     setCurrentSound(soundId);
     setShowSoundMenu(false);
+    setSoundQuery('');
     metronomeAudio.playSound(soundId, 'none');
   };
 
@@ -41,44 +85,37 @@ export const AdvancedMetronome = () => {
 
           <div className="bpm-display">
             <div className="text-4xl font-bold text-white tracking-tight">{bpm}</div>
-            <div className="text-lg text-slate-400 tracking-widest mt-2">BPM • 4/4</div>
+            <div className="text-lg text-slate-400 tracking-widest mt-2">BPM (Tempo)</div>
+            <div className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">{meterLabel}</div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-4 mt-4 max-w-md">
-            <label className="flex items-center gap-1.5 text-white/80 text-xs">
-              <input
-                type="radio"
-                name="subdivision"
-                value="quarter"
-                checked={subdivisionMode === 'quarter'}
-                onChange={() => setSubdivisionMode('quarter')}
-                className="text-blue-400 scale-75"
-              />
-              Quarter (1 2 3 4)
+          <div className="mx-auto max-w-xs text-left">
+            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Time Signature
             </label>
-            <label className="flex items-center gap-1.5 text-white/80 text-xs">
-              <input
-                type="radio"
-                name="subdivision"
-                value="eighth"
-                checked={subdivisionMode === 'eighth'}
-                onChange={() => setSubdivisionMode('eighth')}
-                className="text-blue-400 scale-75"
-              />
-              {'Eighth (1 & 2 &)'}
-            </label>
-            <label className="flex items-center gap-1.5 text-white/80 text-xs">
-              <input
-                type="radio"
-                name="subdivision"
-                value="sixteenth"
-                checked={subdivisionMode === 'sixteenth'}
-                onChange={() => setSubdivisionMode('sixteenth')}
-                className="text-blue-400 scale-75"
-              />
-              16th (1 e + a)
-            </label>
+            <select
+              value={meterPresetId}
+              onChange={(e) => setMeterPresetId(e.target.value as MeterPresetId)}
+              className="w-full rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 shadow-lg outline-none focus:border-blue-400/60"
+              aria-label="Select time signature"
+            >
+              {meterPresets.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
           </div>
+
+          <label className="flex items-center justify-center gap-2 text-sm text-slate-300">
+            <input
+              type="checkbox"
+              checked={leadInEnabled}
+              onChange={(e) => setLeadInEnabled(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-blue-400"
+            />
+            Lead-in voice count
+          </label>
 
           <div className="flex items-center justify-center gap-4">
             <button
@@ -123,48 +160,50 @@ export const AdvancedMetronome = () => {
             </button>
           </div>
 
-          <button
-            onClick={togglePlay}
-            className={`w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white flex items-center justify-center transition-all duration-300 shadow-2xl hover:scale-105 active:scale-95 mx-auto border-4 border-slate-900/50 ${isPlaying ? 'from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 animate-pulse' : ''}`}
-            aria-label={isPlaying ? 'Stop' : 'Start'}
-          >
-            {isPlaying ? (
-              <Square className="w-4 h-4" fill="currentColor" />
-            ) : (
-              <Play className="w-4 h-4" fill="currentColor" />
-            )}
-          </button>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={togglePlay}
+              className={`w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 text-white flex items-center justify-center transition-all duration-300 shadow-2xl hover:scale-105 active:scale-95 border-4 border-slate-900/50 ${isPlaying ? 'from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 animate-pulse' : ''}`}
+              aria-label={isPlaying ? 'Stop' : 'Start'}
+            >
+              {isPlaying ? (
+                <Square className="w-4 h-4" fill="currentColor" />
+              ) : (
+                <Play className="w-4 h-4" fill="currentColor" />
+              )}
+            </button>
 
-          {isPlaying && (
-            <div className="flex justify-center gap-1">
-              {(subdivisionMode === 'sixteenth'
-                ? Array.from({ length: 16 }, (_, i) => i)
-                : subdivisionMode === 'eighth'
-                  ? Array.from({ length: 8 }, (_, i) => i)
-                  : [0, 1, 2, 3]
-              ).map((i) => {
-                const isMainBeat =
-                  subdivisionMode === 'quarter' || i % (subdivisionMode === 'sixteenth' ? 4 : 2) === 0;
-                const isActive = i === beatCount;
-                const baseClasses = 'rounded-full transition-all';
-                const durationClass = subdivisionMode === 'sixteenth' ? 'duration-75' : 'duration-100';
-                const sizeClass = isActive
-                  ? isMainBeat
-                    ? 'w-3 h-3'
-                    : 'w-2.5 h-2.5'
-                  : isMainBeat
-                    ? 'w-2.5 h-2.5'
-                    : 'w-2 h-2';
-                const colorClass = isActive
-                  ? 'bg-blue-400 scale-125 opacity-100'
-                  : 'bg-blue-400/30 scale-100 opacity-60';
+            <select
+              value={visualizerMode}
+              onChange={(e) => setVisualizerMode(e.target.value as VisualizerMode)}
+              className="rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 shadow-lg outline-none focus:border-blue-400/60"
+              aria-label="Select metronome visualizer"
+            >
+              <option value="tracker">Pulse Bar</option>
+              <option value="pendulum">Pendulum Swing</option>
+              <option value="bouncing-ball">Beat Bounce</option>
+            </select>
+          </div>
 
-                return (
-                  <div key={i} className={`${baseClasses} ${durationClass} ${sizeClass} ${colorClass}`} />
-                );
-              })}
-            </div>
-          )}
+          <div className="relative rounded-2xl border border-slate-700/40 bg-slate-950/45 p-3 shadow-inner">
+            {isLeadInActive ? (
+              <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
+                <div className="rounded-full border border-sky-300/30 bg-slate-950/78 px-5 py-2 text-sm font-semibold tracking-[0.14em] text-sky-100 shadow-lg backdrop-blur-sm">
+                  Lead-in: {leadInCount ?? 1}
+                </div>
+              </div>
+            ) : null}
+
+            <MetronomeVisualizer
+              mode={visualizerMode}
+              isActive={isPlaying && !isLeadInActive}
+              beatCount={beatCount}
+              stepsPerBeat={stepsPerBeat}
+              totalBeats={totalBeats}
+              currentStepTime={currentStepTime}
+              secondsPerStep={secondsPerStep}
+            />
+          </div>
         </div>
       </div>
 
@@ -185,29 +224,61 @@ export const AdvancedMetronome = () => {
         </button>
 
         {showSoundMenu && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-lg p-2 z-50 shadow-2xl max-h-72 overflow-y-auto transition-all duration-200 ease-out">
-            {soundOptions.map((option) => (
-              <button
-                type="button"
-                key={option.id}
-                onClick={() => handleSoundSelect(option.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-150 ${
-                  currentSound === option.id
-                    ? 'bg-blue-500/30 border border-blue-400/50'
-                    : 'hover:bg-slate-700/40 border border-transparent'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-white/90 text-sm font-semibold truncate">{option.name}</div>
-                    <div className="text-white/50 text-xs mt-0.5">{option.description}</div>
+          <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-900/90 backdrop-blur-xl border border-slate-700/50 rounded-lg p-2 z-50 shadow-2xl max-h-80 overflow-y-auto transition-all duration-200 ease-out">
+            <div className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur-xl p-2 border-b border-slate-700/40">
+              <input
+                type="search"
+                value={soundQuery}
+                onChange={(e) => setSoundQuery(e.target.value)}
+                placeholder="Search sounds, styles, or tags"
+                className="w-full rounded-md border border-slate-700/60 bg-slate-950/70 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-blue-400/60"
+              />
+            </div>
+
+            <div className="space-y-3 p-1">
+              {groupedSoundOptions.length > 0 ? (
+                groupedSoundOptions.map((section) => (
+                  <div key={section.group} className="space-y-1">
+                    <div className="px-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      {section.group}
+                    </div>
+                    {section.options.map((option) => (
+                      <button
+                        type="button"
+                        key={option.id}
+                        onClick={() => handleSoundSelect(option.id)}
+                        className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-150 ${
+                          currentSound === option.id
+                            ? 'bg-blue-500/30 border border-blue-400/50'
+                            : 'hover:bg-slate-700/40 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="text-white/90 text-sm font-semibold truncate">{option.name}</div>
+                              {option.recommended ? (
+                                <span className="rounded-full bg-emerald-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                                  Practice Pick
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-white/50 text-xs mt-0.5">{option.description}</div>
+                          </div>
+                          <div className="text-blue-400/80 text-xs bg-blue-400/10 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                            {option.mood}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                  <div className="text-blue-400/80 text-xs bg-blue-400/10 px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-                    {option.mood}
-                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-6 text-center text-sm text-slate-400">
+                  No sounds match that search.
                 </div>
-              </button>
-            ))}
+              )}
+            </div>
           </div>
         )}
       </div>

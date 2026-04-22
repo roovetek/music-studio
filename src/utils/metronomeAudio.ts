@@ -1,71 +1,114 @@
 export type MetronomeSound = '808-rimshot' | 'woodblock' | 'indian-classical' | 'jazz-brush' | 'blues-organ' | 'rnb-funk' | 'hiphop-clap' | 'synth-bell' | 'analog-blip';
 
+export type SoundGroup = 'Core Practice' | 'Acoustic / World' | 'Color / Genre';
+
 export interface SoundOption {
   id: MetronomeSound;
   name: string;
   description: string;
   mood: string;
+  group: SoundGroup;
+  tags: string[];
+  recommended?: boolean;
 }
+
+export const soundGroupOrder: SoundGroup[] = [
+  'Core Practice',
+  'Acoustic / World',
+  'Color / Genre',
+];
 
 export const soundOptions: SoundOption[] = [
   {
-    id: '808-rimshot',
-    name: '808 Rimshot',
-    description: 'Classic drum machine snap',
-    mood: 'Hip-Hop / Electronic'
-  },
-  {
     id: 'woodblock',
     name: 'Studio Woodblock',
-    description: 'Warm acoustic click',
-    mood: 'Jazz / Acoustic'
+    description: 'Clear, steady click for daily practice',
+    mood: 'Acoustic / Neutral',
+    group: 'Core Practice',
+    tags: ['woodblock', 'clear', 'practice', 'neutral', 'acoustic'],
+    recommended: true
   },
   {
-    id: 'indian-classical',
-    name: 'Tabla Bols',
-    description: 'Ta-dhin-dhin-na rhythm pattern',
-    mood: 'Indian Classical'
-  },
-  {
-    id: 'jazz-brush',
-    name: 'Jazz Brush',
-    description: 'Smooth brushed snare swing',
-    mood: 'Jazz / Swing'
-  },
-  {
-    id: 'blues-organ',
-    name: 'Blues Organ',
-    description: 'Warm B3 organ chord stab',
-    mood: 'Blues / Soul'
-  },
-  {
-    id: 'rnb-funk',
-    name: 'R&B Funk',
-    description: 'Groovy funk bass slap',
-    mood: 'R&B / Funk'
-  },
-  {
-    id: 'hiphop-clap',
-    name: 'Hip-Hop Clap',
-    description: 'Crisp hand clap with snap',
-    mood: 'Hip-Hop / Trap'
+    id: '808-rimshot',
+    name: '808 Rimshot',
+    description: 'Tight electronic snap with strong attack',
+    mood: 'Electronic / Precise',
+    group: 'Core Practice',
+    tags: ['808', 'rimshot', 'electronic', 'precise', 'bright']
   },
   {
     id: 'synth-bell',
     name: 'Synth Bell',
-    description: 'Bright melodic chime',
-    mood: 'Pop / Electronic'
+    description: 'Bright chime that makes the pulse easy to follow',
+    mood: 'Melodic / Clear',
+    group: 'Core Practice',
+    tags: ['bell', 'bright', 'clear', 'practice', 'melodic']
+  },
+  {
+    id: 'indian-classical',
+    name: 'Tabla Bols',
+    description: 'Tabla-inspired pulse for tala-focused practice',
+    mood: 'Indian Classical',
+    group: 'Acoustic / World',
+    tags: ['tabla', 'bols', 'indian', 'classical', 'tala', 'riyaz']
+  },
+  {
+    id: 'jazz-brush',
+    name: 'Jazz Brush',
+    description: 'Soft brushed attack for relaxed swing practice',
+    mood: 'Jazz / Swing',
+    group: 'Acoustic / World',
+    tags: ['jazz', 'brush', 'swing', 'soft', 'acoustic']
+  },
+  {
+    id: 'blues-organ',
+    name: 'Blues Organ',
+    description: 'Warm chord-like pulse with a rounded attack',
+    mood: 'Blues / Soul',
+    group: 'Acoustic / World',
+    tags: ['organ', 'blues', 'soul', 'warm', 'rounded']
+  },
+  {
+    id: 'rnb-funk',
+    name: 'R&B Funk',
+    description: 'Low-end rhythmic hit with a groovy feel',
+    mood: 'R&B / Funk',
+    group: 'Color / Genre',
+    tags: ['rnb', 'funk', 'groove', 'bass', 'modern']
+  },
+  {
+    id: 'hiphop-clap',
+    name: 'Hip-Hop Clap',
+    description: 'Crisp clap sound with a sharp transient',
+    mood: 'Hip-Hop / Trap',
+    group: 'Color / Genre',
+    tags: ['clap', 'hip-hop', 'trap', 'sharp', 'modern']
   },
   {
     id: 'analog-blip',
     name: 'Analog Blip',
-    description: 'Vintage synthesizer pulse',
-    mood: 'Retro / Lo-Fi'
+    description: 'Retro synth pulse for a lighter electronic texture',
+    mood: 'Retro / Lo-Fi',
+    group: 'Color / Genre',
+    tags: ['analog', 'blip', 'retro', 'lo-fi', 'electronic']
   }
 ];
 
+const soundOutputTrim: Record<MetronomeSound, number> = {
+  'woodblock': 0.78,
+  '808-rimshot': 0.68,
+  'synth-bell': 0.92,
+  'indian-classical': 0.8,
+  'jazz-brush': 0.84,
+  'blues-organ': 1,
+  'rnb-funk': 0.66,
+  'hiphop-clap': 0.6,
+  'analog-blip': 0.82,
+};
+
 class MetronomeAudioEngine {
   private audioContext: AudioContext | null = null;
+  private masterGain: GainNode | null = null;
 
   private getAudioContext(): AudioContext {
     if (!this.audioContext) {
@@ -82,6 +125,27 @@ class MetronomeAudioEngine {
 
   getContext(): AudioContext {
     return this.getAudioContext();
+  }
+
+  peekContext(): AudioContext | null {
+    return this.audioContext;
+  }
+
+  private getMasterGain(ctx: AudioContext): GainNode {
+    if (!this.masterGain) {
+      this.masterGain = ctx.createGain();
+      this.masterGain.gain.value = 0.82;
+      this.masterGain.connect(ctx.destination);
+    }
+
+    return this.masterGain;
+  }
+
+  private connectOutput(ctx: AudioContext, gainNode: GainNode, soundType: MetronomeSound) {
+    const outputTrim = ctx.createGain();
+    outputTrim.gain.value = soundOutputTrim[soundType];
+    gainNode.connect(outputTrim);
+    outputTrim.connect(this.getMasterGain(ctx));
   }
 
   async resume() {
@@ -114,7 +178,7 @@ class MetronomeAudioEngine {
 
     oscillator.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, '808-rimshot');
 
     oscillator.start(time);
     oscillator.stop(time + 0.08);
@@ -146,7 +210,7 @@ class MetronomeAudioEngine {
     oscillator1.connect(filter);
     oscillator2.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'woodblock');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -183,7 +247,7 @@ class MetronomeAudioEngine {
     oscillator2.connect(gain2);
     gain2.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'indian-classical');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -219,7 +283,7 @@ class MetronomeAudioEngine {
     oscillator1.connect(filter);
     oscillator2.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'jazz-brush');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -264,7 +328,7 @@ class MetronomeAudioEngine {
     oscillator3.connect(gain3);
     gain3.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'blues-organ');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -306,7 +370,7 @@ class MetronomeAudioEngine {
     oscillator2.connect(gain2);
     gain2.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'rnb-funk');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -342,7 +406,7 @@ class MetronomeAudioEngine {
     oscillator1.connect(filter);
     oscillator2.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'hiphop-clap');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -381,7 +445,7 @@ class MetronomeAudioEngine {
     gain2.connect(gainNode);
     oscillator3.connect(gain3);
     gain3.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'synth-bell');
 
     oscillator1.start(time);
     oscillator2.start(time);
@@ -416,7 +480,7 @@ class MetronomeAudioEngine {
 
     oscillator.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(ctx.destination);
+    this.connectOutput(ctx, gainNode, 'analog-blip');
 
     oscillator.start(time);
     oscillator.stop(time + 0.06);
