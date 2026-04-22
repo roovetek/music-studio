@@ -32,8 +32,8 @@ export const Home = ({ onNavigate }: HomeProps) => {
             <h2 className="text-2xl font-bold text-white mb-3">Studio Metronome</h2>
 
             <p className="text-slate-400 leading-relaxed">
-              Clear beat divisions, visual pulse tracking, and musical practice sounds for
-              steady rhythm training.
+              Practice timing with expressive sound patterns, visual pulse choices, and
+              clear beat divisions.
             </p>
           </div>
         </button>

@@ -98,7 +98,7 @@ const soundOutputTrim: Record<MetronomeSound, number> = {
   'woodblock': 0.78,
   '808-rimshot': 0.68,
   'synth-bell': 0.92,
-  'indian-classical': 0.8,
+  'indian-classical': 0.94,
   'jazz-brush': 0.84,
   'blues-organ': 1,
   'rnb-funk': 0.66,
@@ -146,6 +146,91 @@ class MetronomeAudioEngine {
     outputTrim.gain.value = soundOutputTrim[soundType];
     gainNode.connect(outputTrim);
     outputTrim.connect(this.getMasterGain(ctx));
+  }
+
+  playCountInCueAt(index: number, time: number) {
+    const ctx = this.getAudioContext();
+    const oscillator = ctx.createOscillator();
+    const overtone = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    const cueTrim = ctx.createGain();
+    const baseFrequencies = [740, 620, 660, 780, 700, 820];
+    const frequency = baseFrequencies[index % baseFrequencies.length];
+
+    oscillator.type = 'triangle';
+    oscillator.frequency.setValueAtTime(frequency, time);
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.78, time + 0.11);
+
+    overtone.type = 'sine';
+    overtone.frequency.setValueAtTime(frequency * 1.5, time);
+    overtone.frequency.exponentialRampToValueAtTime(frequency, time + 0.08);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1200, time);
+    filter.Q.value = 2.6;
+
+    gainNode.gain.setValueAtTime(index === 0 ? 0.42 : 0.34, time);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.16);
+
+    cueTrim.gain.value = 0.86;
+
+    oscillator.connect(filter);
+    overtone.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(cueTrim);
+    cueTrim.connect(this.getMasterGain(ctx));
+
+    oscillator.start(time);
+    overtone.start(time);
+    oscillator.stop(time + 0.16);
+    overtone.stop(time + 0.14);
+  }
+
+  playVocalBeatAt(time: number, accentLevel: 'none' | 'normal' | 'first' = 'none') {
+    const ctx = this.getAudioContext();
+    const oscillator = ctx.createOscillator();
+    const overtone = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    const formantA = ctx.createBiquadFilter();
+    const formantB = ctx.createBiquadFilter();
+    const trimNode = ctx.createGain();
+    const baseFrequency =
+      accentLevel === 'first' ? 210 : accentLevel === 'normal' ? 235 : 280;
+    const duration = accentLevel === 'none' ? 0.09 : 0.12;
+
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(baseFrequency, time);
+    oscillator.frequency.exponentialRampToValueAtTime(baseFrequency * 0.82, time + duration);
+
+    overtone.type = 'triangle';
+    overtone.frequency.setValueAtTime(baseFrequency * 2, time);
+    overtone.frequency.exponentialRampToValueAtTime(baseFrequency * 1.35, time + duration * 0.75);
+
+    formantA.type = 'bandpass';
+    formantA.frequency.setValueAtTime(accentLevel === 'none' ? 1100 : 860, time);
+    formantA.Q.value = 3.2;
+
+    formantB.type = 'bandpass';
+    formantB.frequency.setValueAtTime(accentLevel === 'none' ? 1850 : 1450, time);
+    formantB.Q.value = 2.4;
+
+    gainNode.gain.setValueAtTime(accentLevel === 'first' ? 0.24 : accentLevel === 'normal' ? 0.18 : 0.12, time);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, time + duration);
+
+    trimNode.gain.value = accentLevel === 'none' ? 0.96 : 1.04;
+
+    oscillator.connect(formantA);
+    overtone.connect(formantB);
+    formantA.connect(gainNode);
+    formantB.connect(gainNode);
+    gainNode.connect(trimNode);
+    trimNode.connect(this.getMasterGain(ctx));
+
+    oscillator.start(time);
+    overtone.start(time);
+    oscillator.stop(time + duration);
+    overtone.stop(time + duration * 0.95);
   }
 
   async resume() {

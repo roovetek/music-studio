@@ -3,6 +3,8 @@ import { metronomeAudio, type MetronomeSound } from '../../utils/metronomeAudio'
 
 type AccentLevel = 'none' | 'normal' | 'first';
 type PlaybackState = 'stopped' | 'lead-in' | 'playing';
+export type BeatSource = 'sounds' | 'vocal';
+export type CountInMode = 'sounds' | 'voice';
 export type MeterPresetId =
   | '4-4-quarter'
   | '4-4-eighth'
@@ -71,7 +73,9 @@ interface ScheduledVisualStep {
 
 export const useAdvancedMetronome = (
   meterPresetId: MeterPresetId = '4-4-quarter',
-  leadInEnabled = true
+  leadInEnabled = true,
+  beatSource: BeatSource = 'sounds',
+  countInMode: CountInMode = 'sounds'
 ) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [bpm, setBpm] = useState(90);
@@ -87,6 +91,7 @@ export const useAdvancedMetronome = (
   const currentStepRef = useRef(0);
   const scheduledStepsRef = useRef<ScheduledVisualStep[]>([]);
   const lastDisplayedStepRef = useRef(-1);
+  const scheduledStartTimeRef = useRef(0);
 
   const selectedMeterPreset =
     meterPresets.find((preset) => preset.id === meterPresetId) ?? meterPresets[0];
@@ -123,6 +128,7 @@ export const useAdvancedMetronome = (
       scheduledStepsRef.current = [];
       currentStepRef.current = 0;
       nextStepTimeRef.current = 0;
+      scheduledStartTimeRef.current = 0;
       lastDisplayedStepRef.current = -1;
       leadInTimeoutIdsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
       leadInTimeoutIdsRef.current = [];
@@ -141,51 +147,98 @@ export const useAdvancedMetronome = (
       const millisecondsPerBeat = 60000 / bpm;
       let isCancelled = false;
 
-      const speakCount = (label: string) => {
-        if (!('speechSynthesis' in window)) {
-          return;
+      if (countInMode === 'voice') {
+        const speakCount = (label: string) => {
+          if (!('speechSynthesis' in window)) {
+            return;
+          }
+
+          const utterance = new SpeechSynthesisUtterance(label);
+          utterance.rate = Math.min(1.5, Math.max(1, bpm / 90));
+          utterance.pitch = 1;
+          utterance.volume = 1;
+          window.speechSynthesis.speak(utterance);
+        };
+
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
         }
 
-        const utterance = new SpeechSynthesisUtterance(label);
-        utterance.rate = Math.min(1.5, Math.max(1, bpm / 90));
-        utterance.pitch = 1;
-        utterance.volume = 1;
-        window.speechSynthesis.speak(utterance);
-      };
+        const timeoutIds = countLabels.map((label, index) =>
+          window.setTimeout(() => {
+            if (isCancelled) {
+              return;
+            }
 
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+            setLeadInCount(index + 1);
+            speakCount(label);
+          }, index * millisecondsPerBeat)
+        );
 
-      const timeoutIds = countLabels.map((label, index) =>
-        window.setTimeout(() => {
+        const startTimeoutId = window.setTimeout(() => {
           if (isCancelled) {
             return;
           }
 
-          setLeadInCount(index + 1);
-          speakCount(label);
-        }, index * millisecondsPerBeat)
-      );
+          setLeadInCount(null);
+          setPlaybackState('playing');
+        }, countLabels.length * millisecondsPerBeat);
 
-      const startTimeoutId = window.setTimeout(() => {
+        leadInTimeoutIdsRef.current = [...timeoutIds, startTimeoutId];
+
+        return () => {
+          isCancelled = true;
+          leadInTimeoutIdsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+          leadInTimeoutIdsRef.current = [];
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+          }
+        };
+      }
+
+      const startWithCues = async () => {
+        const audioContext = await metronomeAudio.resume();
         if (isCancelled) {
           return;
         }
 
-        setLeadInCount(null);
-        setPlaybackState('playing');
-      }, countLabels.length * millisecondsPerBeat);
+        const secondsPerBeat = 60 / bpm;
+        const cueStartTime = audioContext.currentTime + 0.08;
+        scheduledStartTimeRef.current = cueStartTime + beatsPerBar * secondsPerBeat;
 
-      leadInTimeoutIdsRef.current = [...timeoutIds, startTimeoutId];
+        countLabels.forEach((_, index) => {
+          metronomeAudio.playCountInCueAt(index, cueStartTime + index * secondsPerBeat);
+        });
+
+        const timeoutIds = countLabels.map((_, index) =>
+          window.setTimeout(() => {
+            if (isCancelled) {
+              return;
+            }
+
+            setLeadInCount(index + 1);
+          }, index * millisecondsPerBeat)
+        );
+
+        const transitionLeadMs = Math.max(0, millisecondsPerBeat * beatsPerBar - 90);
+        const startTimeoutId = window.setTimeout(() => {
+          if (isCancelled) {
+            return;
+          }
+
+          setLeadInCount(null);
+          setPlaybackState('playing');
+        }, transitionLeadMs);
+
+        leadInTimeoutIdsRef.current = [...timeoutIds, startTimeoutId];
+      };
+
+      void startWithCues();
 
       return () => {
         isCancelled = true;
         leadInTimeoutIdsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
         leadInTimeoutIdsRef.current = [];
-        if ('speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-        }
       };
     }
 
@@ -244,7 +297,11 @@ export const useAdvancedMetronome = (
         const step = currentStepRef.current;
         const accentLevel = getAccentLevel(step);
 
-        metronomeAudio.playSoundAt(currentSound, nextStepTimeRef.current, accentLevel);
+        if (beatSource === 'vocal') {
+          metronomeAudio.playVocalBeatAt(nextStepTimeRef.current, accentLevel);
+        } else {
+          metronomeAudio.playSoundAt(currentSound, nextStepTimeRef.current, accentLevel);
+        }
         scheduledStepsRef.current.push({ step, time: nextStepTimeRef.current });
 
         nextStepTimeRef.current += secondsPerStep;
@@ -265,7 +322,11 @@ export const useAdvancedMetronome = (
       lastDisplayedStepRef.current = -1;
       setCurrentStepTime(0);
       setBeatCount(0);
-      nextStepTimeRef.current = audioContext.currentTime + 0.05;
+      nextStepTimeRef.current =
+        scheduledStartTimeRef.current > audioContext.currentTime
+          ? scheduledStartTimeRef.current
+          : audioContext.currentTime + 0.05;
+      scheduledStartTimeRef.current = 0;
 
       scheduleNotes();
       animationFrameIdRef.current = window.requestAnimationFrame(syncVisualTracker);
@@ -286,7 +347,7 @@ export const useAdvancedMetronome = (
         animationFrameIdRef.current = null;
       }
     };
-  }, [playbackState, bpm, currentSound, beatsPerBar, stepsPerBeat, totalBeats, accentedBeats]);
+  }, [playbackState, bpm, currentSound, beatsPerBar, stepsPerBeat, totalBeats, accentedBeats, beatSource, countInMode]);
 
   const togglePlay = () => {
     setPlaybackState((prev) => {
