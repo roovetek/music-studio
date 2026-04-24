@@ -263,9 +263,7 @@
   color: var(--app-muted-strong);
 }
 
-.theme-picker-label,
-.theme-vibe-name,
-.theme-vibe-copy {
+.theme-picker-label {
   white-space: nowrap;
 }
 
@@ -282,9 +280,15 @@
 }
 
 .theme-vibe-summary {
-  max-width: 32rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1 1 18rem;
+  min-width: 0;
+  max-width: 100%;
+  text-align: right;
+  justify-self: end;
+}
+
+.theme-vibe-name {
+  white-space: nowrap;
 }
 
 .home-tile {

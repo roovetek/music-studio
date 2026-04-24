@@ -61,8 +61,8 @@ function App() {
       <div className="app-shell__ambient pointer-events-none absolute inset-0"></div>
       <div className="app-shell__content relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl flex-col gap-8">
         <header className="app-header rounded-2xl px-5 py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex-1">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(24rem,0.7fr)] lg:items-end">
+            <div>
               <label
                 htmlFor="app-theme-select"
                 className="theme-picker-label mb-2 block text-xs font-semibold uppercase tracking-[0.18em]"
@@ -73,19 +73,19 @@ function App() {
                 id="app-theme-select"
                 value={currentTheme}
                 onChange={(e) => setCurrentTheme(e.target.value as AppThemeId)}
-                className="theme-select w-full rounded-xl px-4 py-3 text-sm outline-none lg:max-w-sm"
+                className="theme-select w-full rounded-xl px-4 py-3 text-sm outline-none"
                 aria-label="Select app visual style"
               >
                 {appThemeOptions.map((theme) => (
                   <option key={theme.id} value={theme.id}>
-                    {`${theme.name} [${theme.description.replace(/\.$/, '')}]`}
+                    {`${theme.name} [${theme.description}]`}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="theme-vibe-summary lg:pb-1">
-              <div className="theme-vibe-name text-sm font-semibold uppercase tracking-[0.18em]">
+              <div className="theme-vibe-name text-xs font-semibold uppercase tracking-[0.12em] lg:text-sm">
                 {selectedTheme.vibe}
               </div>
             </div>
