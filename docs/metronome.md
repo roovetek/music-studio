@@ -15,6 +15,7 @@ The **Advanced Metronome** (Studio) is a React + Web Audio metronome: synthesize
 | Sound list + per-sound output trim (metadata) | [`src/utils/metronome/catalog.ts`](../src/utils/metronome/catalog.ts) |
 | Shared accent tiers (`none` / `normal` / `first`) | [`src/utils/metronomeAccent.ts`](../src/utils/metronomeAccent.ts) |
 | Public barrel (re-exports) | [`src/utils/metronomeAudio.ts`](../src/utils/metronomeAudio.ts) |
+| **UI themes** (8 practice-focused presets, CSS variables) | [`src/lib/themes.ts`](../src/lib/themes.ts), [`src/index.css`](../src/index.css) (`[data-theme]` on the app shell) |
 
 ## Data flow
 

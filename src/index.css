@@ -2,47 +2,520 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Baseline = default theme (warm paper) for first paint; App applies data-theme on hydrate. */
+:root,
+[data-theme='metronome-manuscript'] {
+  --app-bg-start: #f4ede3;
+  --app-bg-mid: #ede4d6;
+  --app-bg-end: #f7f0e6;
+  --app-ambient: rgba(30, 64, 175, 0.1);
+  --app-text: #1c1917;
+  --app-muted: #57534e;
+  --app-muted-strong: #292524;
+  --app-panel: rgba(255, 255, 255, 0.55);
+  --app-panel-strong: rgba(255, 255, 255, 0.8);
+  --app-border: rgba(120, 113, 108, 0.38);
+  --app-accent: #1d4ed8;
+  --app-accent-strong: #1e3a8a;
+  --app-accent-soft: rgba(29, 78, 216, 0.14);
+  --app-shadow: rgba(30, 64, 175, 0.12);
+  --app-icon-bg: rgba(29, 78, 216, 0.1);
+  --app-icon-color: #1e40af;
+  --app-select-bg: rgba(255, 255, 255, 0.9);
+  --app-select-border: rgba(120, 113, 108, 0.42);
+  --app-select-text: #1c1917;
+  --metro-stop-start: #dc2626;
+  --metro-stop-end: #991b1b;
+  --metro-visualizer-bg: rgba(255, 255, 255, 0.58);
+  --metro-visualizer-track: rgba(120, 113, 108, 0.25);
+  --metro-visualizer-arm: rgba(29, 78, 216, 0.45);
+}
+
+[data-theme='green-room'] {
+  --app-bg-start: #05100c;
+  --app-bg-mid: #0f1f16;
+  --app-bg-end: #030806;
+  --app-ambient: rgba(52, 211, 153, 0.14);
+  --app-text: #ecfdf5;
+  --app-muted: #9ca3af;
+  --app-muted-strong: #d1fae5;
+  --app-panel: rgba(12, 28, 20, 0.52);
+  --app-panel-strong: rgba(4, 18, 12, 0.84);
+  --app-border: rgba(45, 212, 191, 0.26);
+  --app-accent: #34d399;
+  --app-accent-strong: #6ee7b7;
+  --app-accent-soft: rgba(52, 211, 153, 0.16);
+  --app-shadow: rgba(16, 185, 129, 0.2);
+  --app-icon-bg: rgba(52, 211, 153, 0.12);
+  --app-icon-color: #a7f3d0;
+  --app-select-bg: rgba(4, 22, 16, 0.9);
+  --app-select-border: rgba(52, 211, 153, 0.32);
+  --app-select-text: #ecfdf5;
+  --metro-stop-start: #f87171;
+  --metro-stop-end: #dc2626;
+  --metro-visualizer-bg: rgba(5, 15, 10, 0.55);
+  --metro-visualizer-track: rgba(110, 231, 183, 0.22);
+  --metro-visualizer-arm: rgba(209, 250, 229, 0.9);
+}
+
+[data-theme='booth-take'] {
+  --app-bg-start: #080a0c;
+  --app-bg-mid: #10141a;
+  --app-bg-end: #050608;
+  --app-ambient: rgba(163, 230, 53, 0.1);
+  --app-text: #f4f4f5;
+  --app-muted: #9ca3af;
+  --app-muted-strong: #e4e4e7;
+  --app-panel: rgba(15, 18, 24, 0.62);
+  --app-panel-strong: rgba(8, 10, 14, 0.88);
+  --app-border: rgba(82, 82, 91, 0.4);
+  --app-accent: #a3e635;
+  --app-accent-strong: #bef264;
+  --app-accent-soft: rgba(163, 230, 53, 0.12);
+  --app-shadow: rgba(163, 230, 53, 0.18);
+  --app-icon-bg: rgba(163, 230, 53, 0.1);
+  --app-icon-color: #d9f99d;
+  --app-select-bg: rgba(10, 12, 16, 0.92);
+  --app-select-border: rgba(163, 230, 53, 0.28);
+  --app-select-text: #fafafa;
+  --metro-stop-start: #fb7185;
+  --metro-stop-end: #e11d48;
+  --metro-visualizer-bg: rgba(4, 6, 10, 0.65);
+  --metro-visualizer-track: rgba(113, 113, 122, 0.35);
+  --metro-visualizer-arm: rgba(230, 230, 250, 0.88);
+}
+
+[data-theme='jazz-afterhours'] {
+  --app-bg-start: #140a05;
+  --app-bg-mid: #24160c;
+  --app-bg-end: #0b0704;
+  --app-ambient: rgba(251, 146, 60, 0.14);
+  --app-text: #fffbeb;
+  --app-muted: #c4a882;
+  --app-muted-strong: #fde6c7;
+  --app-panel: rgba(35, 22, 12, 0.55);
+  --app-panel-strong: rgba(22, 12, 6, 0.84);
+  --app-border: rgba(180, 83, 9, 0.36);
+  --app-accent: #ea580c;
+  --app-accent-strong: #fbbf24;
+  --app-accent-soft: rgba(234, 88, 12, 0.14);
+  --app-shadow: rgba(180, 83, 9, 0.22);
+  --app-icon-bg: rgba(251, 191, 36, 0.12);
+  --app-icon-color: #fde68a;
+  --app-select-bg: rgba(24, 14, 8, 0.88);
+  --app-select-border: rgba(251, 191, 36, 0.3);
+  --app-select-text: #fffbeb;
+  --metro-stop-start: #ef4444;
+  --metro-stop-end: #b91c1c;
+  --metro-visualizer-bg: rgba(20, 12, 6, 0.58);
+  --metro-visualizer-track: rgba(196, 168, 130, 0.28);
+  --metro-visualizer-arm: rgba(255, 251, 235, 0.85);
+}
+
+[data-theme='riyaz-dawn'] {
+  --app-bg-start: #0a0514;
+  --app-bg-mid: #180c28;
+  --app-bg-end: #0c0518;
+  --app-ambient: rgba(192, 132, 252, 0.12);
+  --app-text: #faf5ff;
+  --app-muted: #b8a3c9;
+  --app-muted-strong: #ede9fe;
+  --app-panel: rgba(32, 18, 48, 0.52);
+  --app-panel-strong: rgba(16, 8, 28, 0.86);
+  --app-border: rgba(196, 181, 253, 0.22);
+  --app-accent: #ea580c;
+  --app-accent-strong: #fbbf24;
+  --app-accent-soft: rgba(234, 88, 12, 0.14);
+  --app-shadow: rgba(192, 132, 252, 0.16);
+  --app-icon-bg: rgba(251, 191, 36, 0.1);
+  --app-icon-color: #fde68a;
+  --app-select-bg: rgba(18, 10, 32, 0.9);
+  --app-select-border: rgba(251, 191, 36, 0.28);
+  --app-select-text: #fef3c7;
+  --metro-stop-start: #f87171;
+  --metro-stop-end: #c2410c;
+  --metro-visualizer-bg: rgba(20, 10, 36, 0.55);
+  --metro-visualizer-track: rgba(196, 181, 253, 0.2);
+  --metro-visualizer-arm: rgba(254, 243, 199, 0.9);
+}
+
+[data-theme='house-lights'] {
+  --app-bg-start: #000000;
+  --app-bg-mid: #0f0c08;
+  --app-bg-end: #000000;
+  --app-ambient: rgba(212, 175, 55, 0.12);
+  --app-text: #fffef5;
+  --app-muted: #a8a29e;
+  --app-muted-strong: #e7e5e4;
+  --app-panel: rgba(18, 14, 10, 0.58);
+  --app-panel-strong: rgba(8, 6, 4, 0.88);
+  --app-border: rgba(120, 113, 108, 0.28);
+  --app-accent: #d4af37;
+  --app-accent-strong: #fde68a;
+  --app-accent-soft: rgba(212, 175, 55, 0.12);
+  --app-shadow: rgba(0, 0, 0, 0.45);
+  --app-icon-bg: rgba(212, 175, 55, 0.1);
+  --app-icon-color: #facc15;
+  --app-select-bg: rgba(8, 6, 4, 0.92);
+  --app-select-border: rgba(212, 175, 55, 0.3);
+  --app-select-text: #fffef5;
+  --metro-stop-start: #dc2626;
+  --metro-stop-end: #7f1d1d;
+  --metro-visualizer-bg: rgba(0, 0, 0, 0.55);
+  --metro-visualizer-track: rgba(168, 162, 158, 0.22);
+  --metro-visualizer-arm: rgba(254, 243, 199, 0.88);
+}
+
+[data-theme='arctic-partitur'] {
+  --app-bg-start: #d8e4f0;
+  --app-bg-mid: #eef4fa;
+  --app-bg-end: #d8e4f0;
+  --app-ambient: rgba(14, 165, 233, 0.12);
+  --app-text: #0f172a;
+  --app-muted: #475569;
+  --app-muted-strong: #1e293b;
+  --app-panel: rgba(255, 255, 255, 0.7);
+  --app-panel-strong: rgba(255, 255, 255, 0.9);
+  --app-border: rgba(100, 116, 139, 0.42);
+  --app-accent: #0284c7;
+  --app-accent-strong: #0ea5e9;
+  --app-accent-soft: rgba(2, 132, 199, 0.12);
+  --app-shadow: rgba(14, 165, 233, 0.14);
+  --app-icon-bg: rgba(2, 132, 199, 0.1);
+  --app-icon-color: #0369a1;
+  --app-select-bg: rgba(255, 255, 255, 0.95);
+  --app-select-border: rgba(100, 116, 139, 0.5);
+  --app-select-text: #0f172a;
+  --metro-stop-start: #e11d48;
+  --metro-stop-end: #be123c;
+  --metro-visualizer-bg: rgba(255, 255, 255, 0.55);
+  --metro-visualizer-track: rgba(71, 85, 105, 0.2);
+  --metro-visualizer-arm: rgba(2, 132, 199, 0.5);
+}
+
+[data-theme='subwoofer-haze'] {
+  --app-bg-start: #100d14;
+  --app-bg-mid: #1a1622;
+  --app-bg-end: #0a0810;
+  --app-ambient: rgba(192, 132, 252, 0.14);
+  --app-text: #faf5ff;
+  --app-muted: #a89bb8;
+  --app-muted-strong: #e9d5ff;
+  --app-panel: rgba(30, 24, 38, 0.58);
+  --app-panel-strong: rgba(16, 12, 24, 0.86);
+  --app-border: rgba(167, 139, 250, 0.22);
+  --app-accent: #fb7185;
+  --app-accent-strong: #c4b5fd;
+  --app-accent-soft: rgba(251, 113, 133, 0.12);
+  --app-shadow: rgba(192, 132, 252, 0.18);
+  --app-icon-bg: rgba(251, 113, 133, 0.1);
+  --app-icon-color: #f9a8d4;
+  --app-select-bg: rgba(18, 12, 28, 0.9);
+  --app-select-border: rgba(167, 139, 250, 0.28);
+  --app-select-text: #fae8ff;
+  --metro-stop-start: #f472b6;
+  --metro-stop-end: #db2777;
+  --metro-visualizer-bg: rgba(16, 12, 28, 0.58);
+  --metro-visualizer-track: rgba(196, 181, 253, 0.18);
+  --metro-visualizer-arm: rgba(250, 232, 255, 0.88);
+}
+
+.app-shell {
+  position: relative;
+  background: linear-gradient(135deg, var(--app-bg-start), var(--app-bg-mid), var(--app-bg-end));
+  color: var(--app-text);
+  transition: background 280ms ease, color 280ms ease;
+}
+
+.app-shell__content {
+  align-items: stretch;
+}
+
+.app-shell__ambient {
+  background: radial-gradient(circle at top right, var(--app-ambient), transparent 42%);
+}
+
+.app-header {
+  background: var(--app-panel);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+.theme-back-link {
+  color: var(--app-muted);
+}
+
+.theme-back-link:hover {
+  color: var(--app-text);
+}
+
+.home-title {
+  color: var(--app-text);
+}
+
+.home-subtitle {
+  color: var(--app-muted);
+}
+
+.theme-picker-label,
+.theme-vibe-name {
+  color: var(--app-muted-strong);
+}
+
+.theme-picker-label,
+.theme-vibe-name,
+.theme-vibe-copy {
+  white-space: nowrap;
+}
+
+.theme-select {
+  background: var(--app-select-bg);
+  border: 1px solid var(--app-select-border);
+  color: var(--app-select-text);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.14);
+}
+
+.theme-vibe,
+.theme-vibe-copy {
+  color: var(--app-muted);
+}
+
+.theme-vibe-summary {
+  max-width: 32rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-tile {
+  background: linear-gradient(135deg, var(--app-panel), var(--app-panel-strong));
+  border: 1px solid var(--app-border);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.2);
+}
+
+.home-tile:hover {
+  border-color: color-mix(in srgb, var(--app-accent) 48%, white 12%);
+  box-shadow: 0 26px 60px var(--app-shadow);
+}
+
+.home-tile__glow {
+  background: linear-gradient(135deg, transparent, transparent);
+}
+
+.home-tile:hover .home-tile__glow {
+  background: linear-gradient(135deg, var(--app-accent-soft), transparent 65%);
+}
+
+.home-tile__icon {
+  background: var(--app-icon-bg);
+  color: var(--app-icon-color);
+}
+
+.home-tile:hover .home-tile__icon {
+  background: color-mix(in srgb, var(--app-icon-bg) 60%, var(--app-accent-soft) 40%);
+}
+
+.home-tile__title {
+  color: var(--app-text);
+}
+
+.home-tile__copy {
+  color: var(--app-muted);
+}
+
+.metronome-title {
+  color: var(--app-muted-strong);
+}
+
+.metronome-bpm-value {
+  color: var(--app-text);
+}
+
+.metronome-bpm-label {
+  color: var(--app-muted);
+}
+
+.metronome-transport-stack {
+  align-self: stretch;
+}
+
+.metronome-topbar .bpm-display {
+  min-width: 0;
+}
+
+.metronome-card {
+  border: 1px solid var(--app-border);
+  background: color-mix(in srgb, var(--app-panel) 88%, transparent);
+}
+
+.metronome-field-label {
+  color: var(--app-muted);
+}
+
+.metronome-select,
+.metronome-search,
+.metronome-pattern-trigger {
+  background: var(--app-select-bg);
+  border: 1px solid var(--app-select-border);
+  color: var(--app-select-text);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+}
+
+.metronome-select:focus,
+.metronome-search:focus,
+.metronome-pattern-trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--app-accent) 56%, white 8%);
+}
+
+.metronome-pattern-trigger:hover {
+  background: color-mix(in srgb, var(--app-select-bg) 80%, var(--app-accent-soft) 20%);
+}
+
+.metronome-pattern-icon {
+  color: var(--app-icon-color);
+}
+
+.metronome-pattern-text,
+.metronome-option-title,
+.metronome-play-label {
+  color: var(--app-text);
+}
+
+.metronome-pattern-chevron,
+.metronome-group-label,
+.metronome-empty-state,
+.metronome-muted-box,
+.metronome-option-desc {
+  color: var(--app-muted);
+}
+
+.metronome-menu {
+  background: color-mix(in srgb, var(--app-panel-strong) 94%, transparent);
+  border: 1px solid var(--app-border);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+.metronome-menu-header {
+  background: color-mix(in srgb, var(--app-panel-strong) 96%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-border) 80%, transparent);
+}
+
+.metronome-search::placeholder {
+  color: color-mix(in srgb, var(--app-muted) 72%, transparent);
+}
+
+.metronome-sound-option {
+  border-color: transparent;
+}
+
+.metronome-sound-option:hover {
+  background: color-mix(in srgb, var(--app-panel-strong) 74%, var(--app-accent-soft) 26%);
+}
+
+.metronome-sound-option.is-active {
+  background: color-mix(in srgb, var(--app-accent-soft) 68%, var(--app-panel-strong) 32%);
+  border-color: color-mix(in srgb, var(--app-accent) 50%, white 10%);
+}
+
+.metronome-badge,
+.metronome-option-tag {
+  background: color-mix(in srgb, var(--app-accent-soft) 70%, transparent);
+  color: var(--app-accent-strong);
+}
+
+.metronome-muted-box {
+  border: 1px solid color-mix(in srgb, var(--app-border) 82%, transparent);
+  background: color-mix(in srgb, var(--app-panel-strong) 84%, transparent);
+}
+
+.metronome-pattern-hint {
+  color: var(--app-accent-strong);
+}
+
+.metronome-play-btn {
+  border: 1px solid color-mix(in srgb, var(--app-border) 85%, transparent);
+  background: linear-gradient(135deg, var(--app-accent), var(--app-accent-strong));
+  color: #fff;
+  box-shadow: 0 12px 32px var(--app-shadow);
+}
+
+.metronome-play-btn:hover {
+  filter: brightness(1.08);
+}
+
+.metronome-play-btn.is-playing {
+  background: linear-gradient(135deg, var(--metro-stop-start), var(--metro-stop-end));
+}
+
+.metronome-visualizer-frame {
+  border: 1px solid color-mix(in srgb, var(--app-border) 76%, transparent);
+  background: color-mix(in srgb, var(--app-panel-strong) 82%, transparent);
+}
+
+.metronome-lead-in {
+  border: 1px solid color-mix(in srgb, var(--app-accent-strong) 30%, transparent);
+  background: color-mix(in srgb, var(--app-panel-strong) 90%, transparent);
+  color: var(--app-accent-strong);
+}
+
 @layer components {
   .glass-panel {
-    @apply bg-slate-900/40 backdrop-blur-xl border border-slate-700/50 shadow-2xl;
+    @apply backdrop-blur-xl shadow-2xl;
+    background: var(--app-panel);
+    border: 1px solid var(--app-border);
     box-shadow:
       0 0 60px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .bpm-display {
-    @apply py-6 bg-gradient-to-b from-blue-500/10 to-transparent rounded-2xl;
+    @apply py-6 rounded-2xl;
+    background: linear-gradient(180deg, var(--app-accent-soft), transparent);
   }
 
   .control-btn {
-    @apply w-12 h-12 rounded-full bg-slate-800/60 hover:bg-slate-700/60
-           border border-slate-600/50 text-slate-300 hover:text-white
-           flex items-center justify-center transition-all duration-200
-           hover:scale-110 active:scale-95 backdrop-blur-sm;
+    @apply w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 backdrop-blur-sm;
+    background: var(--app-select-bg);
+    border: 1px solid var(--app-select-border);
+    color: var(--app-muted-strong);
+  }
+
+  .control-btn:hover {
+    background: color-mix(in srgb, var(--app-select-bg) 78%, var(--app-accent-soft) 22%);
+    color: var(--app-text);
   }
 
   .control-btn-small {
-    @apply px-4 py-2 rounded-full bg-slate-800/60 hover:bg-slate-700/60
-           border border-slate-600/50 text-slate-300 hover:text-white
-           text-sm font-medium transition-all duration-200
-           hover:scale-105 active:scale-95 backdrop-blur-sm;
+    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 hover:scale-105 active:scale-95 backdrop-blur-sm;
+    background: var(--app-select-bg);
+    border: 1px solid var(--app-select-border);
+    color: var(--app-muted-strong);
+  }
+
+  .control-btn-small:hover {
+    background: color-mix(in srgb, var(--app-select-bg) 78%, var(--app-accent-soft) 22%);
+    color: var(--app-text);
   }
 
   .bpm-slider {
-    @apply w-40 h-2 bg-slate-800/60 rounded-full appearance-none cursor-pointer
-           border border-slate-600/50;
+    @apply w-40 h-2 rounded-full appearance-none cursor-pointer;
+    background: color-mix(in srgb, var(--app-select-bg) 84%, transparent);
+    border: 1px solid var(--app-select-border);
   }
 
   .bpm-slider::-webkit-slider-thumb {
-    @apply appearance-none w-5 h-5 bg-gradient-to-br from-blue-400 to-blue-600
-           rounded-full cursor-pointer shadow-lg border-2 border-slate-900
+    @apply appearance-none w-5 h-5 rounded-full cursor-pointer shadow-lg border-2
            hover:scale-110 transition-transform;
+    background: linear-gradient(135deg, var(--app-accent), var(--app-accent-strong));
+    border-color: color-mix(in srgb, var(--app-panel-strong) 88%, black 12%);
   }
 
   .bpm-slider::-moz-range-thumb {
-    @apply w-5 h-5 bg-gradient-to-br from-blue-400 to-blue-600
-           rounded-full cursor-pointer shadow-lg border-2 border-slate-900
+    @apply w-5 h-5 rounded-full cursor-pointer shadow-lg border-2
            hover:scale-110 transition-transform;
+    background: linear-gradient(135deg, var(--app-accent), var(--app-accent-strong));
+    border-color: color-mix(in srgb, var(--app-panel-strong) 88%, black 12%);
   }
 
   .play-btn {

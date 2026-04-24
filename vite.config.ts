@@ -43,8 +43,8 @@ export default defineConfig(() => {
           name: 'Music Studio',
           short_name: 'MusicStudio',
           description: 'Audio tools: classic and studio metronomes with tempo control.',
-          theme_color: '#0f172a',
-          background_color: '#020617',
+          theme_color: '#f2ebe1',
+          background_color: '#ede4d6',
           display: 'standalone',
           orientation: 'portrait',
           // Relative to manifest URL so GitHub project pages (/repo/) work.

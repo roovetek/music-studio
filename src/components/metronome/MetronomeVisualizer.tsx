@@ -32,25 +32,6 @@ const roundedRect = (
   context.closePath();
 };
 
-const beatPalette = [
-  {
-    active: 'rgba(248, 113, 113, %alpha%)',
-    idle: 'rgba(248, 113, 113, 0.24)',
-  },
-  {
-    active: 'rgba(96, 165, 250, %alpha%)',
-    idle: 'rgba(96, 165, 250, 0.22)',
-  },
-  {
-    active: 'rgba(52, 211, 153, %alpha%)',
-    idle: 'rgba(52, 211, 153, 0.22)',
-  },
-  {
-    active: 'rgba(196, 181, 253, %alpha%)',
-    idle: 'rgba(196, 181, 253, 0.22)',
-  },
-] as const;
-
 export const MetronomeVisualizer = ({
   mode,
   isActive,
@@ -62,6 +43,23 @@ export const MetronomeVisualizer = ({
 }: MetronomeVisualizerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  const withAlpha = (color: string, alpha: number) => {
+    const normalized = color.trim();
+    if (!normalized) {
+      return `rgba(255, 255, 255, ${alpha})`;
+    }
+
+    if (normalized.startsWith('rgba(')) {
+      return normalized.replace(/rgba\(([^)]+),\s*[^)]+\)/, `rgba($1, ${alpha})`);
+    }
+
+    if (normalized.startsWith('rgb(')) {
+      return normalized.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`);
+    }
+
+    return normalized;
+  };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) {
@@ -72,6 +70,37 @@ export const MetronomeVisualizer = ({
     if (!parent) {
       return;
     }
+
+    const themeStyles = getComputedStyle(canvas);
+    const visualizerBg =
+      themeStyles.getPropertyValue('--metro-visualizer-bg').trim() || 'rgba(15, 23, 42, 0.68)';
+    const visualizerTrack =
+      themeStyles.getPropertyValue('--metro-visualizer-track').trim() || 'rgba(148, 163, 184, 0.45)';
+    const visualizerArm =
+      themeStyles.getPropertyValue('--metro-visualizer-arm').trim() || 'rgba(226, 232, 240, 0.85)';
+    const accentBase = themeStyles.getPropertyValue('--app-accent').trim() || 'rgb(248, 113, 113)';
+    const accentStrong = themeStyles.getPropertyValue('--app-accent-strong').trim() || 'rgb(96, 165, 250)';
+    const iconColor = themeStyles.getPropertyValue('--app-icon-color').trim() || 'rgb(196, 181, 253)';
+    const mutedStrong = themeStyles.getPropertyValue('--app-muted-strong').trim() || 'rgb(52, 211, 153)';
+
+    const themedBeatPalette = [
+      {
+        active: withAlpha(accentBase, 0.84),
+        idle: withAlpha(accentBase, 0.24),
+      },
+      {
+        active: withAlpha(accentStrong, 0.8),
+        idle: withAlpha(accentStrong, 0.2),
+      },
+      {
+        active: withAlpha(iconColor, 0.78),
+        idle: withAlpha(iconColor, 0.22),
+      },
+      {
+        active: withAlpha(mutedStrong, 0.76),
+        idle: withAlpha(mutedStrong, 0.2),
+      },
+    ] as const;
 
     let animationFrameId: number | null = null;
     let resizeObserver: ResizeObserver | null = null;
@@ -104,11 +133,11 @@ export const MetronomeVisualizer = ({
       const stepProgress = Math.max(0, Math.min(1, rawProgress));
       const continuousStep = beatCount + stepProgress;
       const quarterMode = totalBeats <= 4;
-      const activeBeatIndex = Math.floor(beatCount / stepsPerBeat) % beatPalette.length;
+      const activeBeatIndex = Math.floor(beatCount / stepsPerBeat) % themedBeatPalette.length;
 
       const getBeatColor = (index: number, isActiveBeat: boolean, isSubdivision: boolean) => {
-        const paletteIndex = Math.floor(index / stepsPerBeat) % beatPalette.length;
-        const palette = beatPalette[paletteIndex];
+        const paletteIndex = Math.floor(index / stepsPerBeat) % themedBeatPalette.length;
+        const palette = themedBeatPalette[paletteIndex];
 
         if (isSubdivision) {
           return isActiveBeat
@@ -117,13 +146,16 @@ export const MetronomeVisualizer = ({
         }
 
         if (isActiveBeat) {
-          return palette.active.replace('%alpha%', String(0.6 + 0.34 * (1 - stepProgress)));
+          const a = 0.6 + 0.34 * (1 - stepProgress);
+          return palette.active.includes('%alpha%')
+            ? palette.active.replace('%alpha%', String(a))
+            : palette.active;
         }
 
         return palette.idle;
       };
 
-      context.fillStyle = 'rgba(15, 23, 42, 0.68)';
+      context.fillStyle = visualizerBg;
       roundedRect(context, 0, 0, width, height, 20);
       context.fill();
 
@@ -163,23 +195,25 @@ export const MetronomeVisualizer = ({
         const angle = Math.cos(beatPhase * Math.PI) * (Math.PI / 5.5);
         const bobX = centerX + Math.sin(angle) * armLength;
         const bobY = topY + Math.cos(angle) * armLength;
-        const palette = beatPalette[activeBeatIndex];
+        const palette = themedBeatPalette[activeBeatIndex];
 
-        context.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+        context.strokeStyle = visualizerTrack;
         context.lineWidth = 4;
         context.beginPath();
         context.moveTo(centerX, topY);
         context.lineTo(centerX, height - 18);
         context.stroke();
 
-        context.strokeStyle = 'rgba(226, 232, 240, 0.85)';
+        context.strokeStyle = visualizerArm;
         context.lineWidth = 3;
         context.beginPath();
         context.moveTo(centerX, topY);
         context.lineTo(bobX, bobY);
         context.stroke();
 
-        context.fillStyle = palette.active.replace('%alpha%', '0.92');
+        context.fillStyle = palette.active.includes('%alpha%')
+          ? palette.active.replace('%alpha%', '0.92')
+          : palette.active;
         context.beginPath();
         context.arc(bobX, bobY, 12, 0, Math.PI * 2);
         context.fill();
@@ -193,16 +227,18 @@ export const MetronomeVisualizer = ({
         const x = paddingX + Math.max(0, Math.min(1, barProgress)) * span;
         const bounce = 1 - 4 * Math.pow(stepProgress - 0.5, 2);
         const y = baselineY - Math.max(0, bounce) * (height * 0.48);
-        const palette = beatPalette[activeBeatIndex];
+        const palette = themedBeatPalette[activeBeatIndex];
 
-        context.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+        context.strokeStyle = visualizerTrack;
         context.lineWidth = 3;
         context.beginPath();
         context.moveTo(paddingX, baselineY);
         context.lineTo(width - paddingX, baselineY);
         context.stroke();
 
-        context.fillStyle = palette.active.replace('%alpha%', '0.94');
+        context.fillStyle = palette.active.includes('%alpha%')
+          ? palette.active.replace('%alpha%', '0.94')
+          : palette.active;
         context.beginPath();
         context.arc(x, y, 12, 0, Math.PI * 2);
         context.fill();
