@@ -32,6 +32,25 @@ const roundedRect = (
   context.closePath();
 };
 
+const beatPalette = [
+  {
+    active: 'rgba(248, 113, 113, %alpha%)',
+    idle: 'rgba(248, 113, 113, 0.24)',
+  },
+  {
+    active: 'rgba(96, 165, 250, %alpha%)',
+    idle: 'rgba(96, 165, 250, 0.22)',
+  },
+  {
+    active: 'rgba(52, 211, 153, %alpha%)',
+    idle: 'rgba(52, 211, 153, 0.22)',
+  },
+  {
+    active: 'rgba(196, 181, 253, %alpha%)',
+    idle: 'rgba(196, 181, 253, 0.22)',
+  },
+] as const;
+
 export const MetronomeVisualizer = ({
   mode,
   isActive,
@@ -42,25 +61,6 @@ export const MetronomeVisualizer = ({
   secondsPerStep,
 }: MetronomeVisualizerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const beatPalette = [
-    {
-      active: 'rgba(248, 113, 113, %alpha%)',
-      idle: 'rgba(248, 113, 113, 0.24)',
-    },
-    {
-      active: 'rgba(96, 165, 250, %alpha%)',
-      idle: 'rgba(96, 165, 250, 0.22)',
-    },
-    {
-      active: 'rgba(52, 211, 153, %alpha%)',
-      idle: 'rgba(52, 211, 153, 0.22)',
-    },
-    {
-      active: 'rgba(196, 181, 253, %alpha%)',
-      idle: 'rgba(196, 181, 253, 0.22)',
-    },
-  ] as const;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -129,7 +129,6 @@ export const MetronomeVisualizer = ({
 
       if (mode === 'tracker') {
         const paddingX = 18;
-        const paddingY = quarterMode ? 28 : 34;
         const gap = quarterMode ? 14 : totalBeats <= 8 ? 9 : 6;
         const segmentWidth = (width - paddingX * 2 - gap * (totalBeats - 1)) / totalBeats;
         const segmentHeight = quarterMode ? 28 : totalBeats <= 8 ? 18 : 12;

@@ -2,6 +2,8 @@
 
 Web + Capacitor shell for the metronome tools (classic and studio).
 
+**Studio metronome (implementation):** see [docs/metronome.md](docs/metronome.md) for how scheduling, `BeatSource` modes, Web Audio, and accents are wired (file map and data flow).
+
 ## Web / PWA
 
 - **Build:** `npm run build` — outputs `dist/` with a service worker and `manifest.webmanifest` (via [vite-plugin-pwa](https://vite-pwa-org.netlify.app/)).

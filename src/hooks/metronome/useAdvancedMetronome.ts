@@ -1,9 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
+import { getMetronomeAccentForStep } from '../../utils/metronomeAccent';
 import { metronomeAudio, type MetronomeSound } from '../../utils/metronomeAudio';
-
-type AccentLevel = 'none' | 'normal' | 'first';
 type PlaybackState = 'stopped' | 'lead-in' | 'playing';
-export type BeatSource = 'sounds' | 'vocal';
+export type BeatSource =
+  | 'sounds'
+  | 'vocal'
+  | 'syllables'
+  | 'tabla-bols'
+  | 'guitar-strum'
+  | 'piano-arpeggio'
+  | 'violin-legato'
+  | 'drums-pattern';
 export type CountInMode = 'sounds' | 'voice';
 export type MeterPresetId =
   | '4-4-quarter'
@@ -247,15 +254,8 @@ export const useAdvancedMetronome = (
     const scheduleAheadTime = 0.1;
     const visualLeadTime = 1 / 120;
 
-    const getAccentLevel = (step: number): AccentLevel => {
-      const beatIndex = Math.floor(step / stepsPerBeat);
-
-      if (step === 0) {
-        return 'first';
-      }
-
-      return step % stepsPerBeat === 0 && accentedBeats.includes(beatIndex) ? 'normal' : 'none';
-    };
+    const getAccentLevel = (step: number) =>
+      getMetronomeAccentForStep(step, stepsPerBeat, beatsPerBar, accentedBeats);
 
     const syncVisualTracker = () => {
       if (isCancelled) {
@@ -296,11 +296,38 @@ export const useAdvancedMetronome = (
       while (nextStepTimeRef.current < audioContext.currentTime + scheduleAheadTime) {
         const step = currentStepRef.current;
         const accentLevel = getAccentLevel(step);
+        const subdivisionIndex = step % stepsPerBeat;
 
-        if (beatSource === 'vocal') {
-          metronomeAudio.playVocalBeatAt(nextStepTimeRef.current, accentLevel);
-        } else {
-          metronomeAudio.playSoundAt(currentSound, nextStepTimeRef.current, accentLevel);
+        const t = nextStepTimeRef.current;
+        switch (beatSource) {
+          case 'sounds':
+            metronomeAudio.playSoundAt(currentSound, t, accentLevel);
+            break;
+          case 'vocal':
+            metronomeAudio.playVocalBeatAt(t, accentLevel);
+            break;
+          case 'syllables':
+            metronomeAudio.playSyllableBeatAt(t, accentLevel, subdivisionIndex, stepsPerBeat);
+            break;
+          case 'tabla-bols':
+            metronomeAudio.playTablaBolAt(t, step % 4, accentLevel);
+            break;
+          case 'guitar-strum':
+            metronomeAudio.playGuitarStrumAt(t, step % 2 === 0 ? 'down' : 'up', accentLevel);
+            break;
+          case 'piano-arpeggio':
+            metronomeAudio.playPianoNoteAt(t, step % 4, accentLevel);
+            break;
+          case 'violin-legato':
+            metronomeAudio.playViolinBowAt(t, accentLevel, secondsPerStep);
+            break;
+          case 'drums-pattern': {
+            const grid16 = totalBeats > 0 ? Math.floor((step * 16) / totalBeats) % 16 : 0;
+            metronomeAudio.playDrumPatternStepAt(t, grid16, accentLevel);
+            break;
+          }
+          default:
+            metronomeAudio.playSoundAt(currentSound, t, accentLevel);
         }
         scheduledStepsRef.current.push({ step, time: nextStepTimeRef.current });
 
@@ -347,7 +374,17 @@ export const useAdvancedMetronome = (
         animationFrameIdRef.current = null;
       }
     };
-  }, [playbackState, bpm, currentSound, beatsPerBar, stepsPerBeat, totalBeats, accentedBeats, beatSource, countInMode]);
+  }, [
+    playbackState,
+    bpm,
+    currentSound,
+    beatsPerBar,
+    stepsPerBeat,
+    totalBeats,
+    accentedBeats,
+    beatSource,
+    countInMode,
+  ]);
 
   const togglePlay = () => {
     setPlaybackState((prev) => {

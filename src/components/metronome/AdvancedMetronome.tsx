@@ -12,6 +12,25 @@ import {
   type VisualizerMode,
 } from './MetronomeVisualizer';
 
+const BEAT_SOURCE_PATTERN_HINT: Partial<Record<BeatSource, string>> = {
+  'tabla-bols': 'ta · dhin · dhin · na',
+  'guitar-strum': '↓ ↑ ↓ ↑ ↓ ↑ ↓ ↑',
+  'piano-arpeggio': 'C · E · G · C′',
+  'violin-legato': '— — — —',
+  'drums-pattern': 'K · · · S · K · K · · · S · K ·',
+};
+
+const SOUND_PATTERN_PLACEHOLDER: Partial<Record<BeatSource, string>> = {
+  vocal: 'Vocal Pulse uses a smoother sustained vocal-style synthesized cue.',
+  syllables:
+    'Syllables: spoken-style one, ta-ka, ta-ka-di-mi with formant synthesis for subdivisions.',
+  'tabla-bols': 'Teentaal-style bols (ta · dhin · dhin · na) synthesized with bandpass formants.',
+  'guitar-strum': 'Strum pattern alternates down / up across each metronome step (emulated chord).',
+  'piano-arpeggio': 'Arpeggio cycles root, third, fifth, octave for each step in the bar.',
+  'violin-legato': 'Sustained bow tone with vibrato; length follows each subdivision step.',
+  'drums-pattern': '16-step syncopated groove: kick, snare, hi-hat (mapped to your meter grid).',
+};
+
 export const AdvancedMetronome = () => {
   const [meterPresetId, setMeterPresetId] = useState<MeterPresetId>('4-4-quarter');
   const [beatSource, setBeatSource] = useState<BeatSource>('sounds');
@@ -57,7 +76,13 @@ export const AdvancedMetronome = () => {
       return true;
     }
 
-    const searchableText = [option.name, option.description, option.mood, ...option.tags]
+    const searchableText = [
+      option.name,
+      option.description,
+      option.mood,
+      option.instrumentFamily,
+      ...option.tags,
+    ]
       .join(' ')
       .toLowerCase();
 
@@ -191,8 +216,9 @@ export const AdvancedMetronome = () => {
                   )}
                 </div>
               ) : (
-                <div className="rounded-xl border border-slate-700/60 bg-slate-900/50 px-4 py-3 text-sm text-slate-300 shadow-inner">
-                  Vocal beat source uses scheduled synthesized syllable-style cues.
+                <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 px-4 py-3 text-sm text-slate-400 shadow-inner">
+                  {SOUND_PATTERN_PLACEHOLDER[beatSource] ??
+                    'Select a beat source. Sound patterns apply when “Sounds” is active.'}
                 </div>
               )}
             </div>
@@ -203,13 +229,44 @@ export const AdvancedMetronome = () => {
               </label>
               <select
                 value={beatSource}
-                onChange={(e) => setBeatSource(e.target.value as BeatSource)}
+                onChange={(e) => {
+                  setShowSoundMenu(false);
+                  setBeatSource(e.target.value as BeatSource);
+                }}
                 className="w-full rounded-xl border border-slate-700/60 bg-slate-900/70 px-4 py-3 text-sm text-slate-100 shadow-lg outline-none focus:border-blue-400/60"
                 aria-label="Select beat source"
               >
-                <option value="sounds">Sounds</option>
-                <option value="vocal">Vocal</option>
+                <optgroup label="Neutral">
+                  <option value="sounds">Sounds (pick a click below)</option>
+                  <option value="vocal">Vocal Pulse</option>
+                  <option value="syllables">Syllables (ta-ka-di-mi)</option>
+                </optgroup>
+                <optgroup label="Indian classical">
+                  <option value="tabla-bols">Tabla bols (ta · dhin · dhin · na)</option>
+                </optgroup>
+                <optgroup label="Guitar">
+                  <option value="guitar-strum">Strum pattern (down / up)</option>
+                </optgroup>
+                <optgroup label="Piano">
+                  <option value="piano-arpeggio">Arpeggio (C · E · G · C′)</option>
+                </optgroup>
+                <optgroup label="Violin">
+                  <option value="violin-legato">Legato bow</option>
+                </optgroup>
+                <optgroup label="Drums">
+                  <option value="drums-pattern">Syncopated groove</option>
+                </optgroup>
               </select>
+              {BEAT_SOURCE_PATTERN_HINT[beatSource] ? (
+                <p className="mt-2 font-mono text-xs tracking-tight text-sky-300/90">
+                  Pattern: {BEAT_SOURCE_PATTERN_HINT[beatSource]}
+                </p>
+              ) : null}
+              <p className="mt-3 text-xs leading-5 text-slate-400">
+                <strong className="text-slate-300">Sounds</strong> uses the pick below. Other modes use built-in
+                Web Audio patterns (no sample files). Use 8th or 16th time signatures for strum and arpeggio
+                lines that match typical subdivisions.
+              </p>
             </div>
 
             <div className="rounded-2xl border border-slate-700/50 bg-slate-900/35 p-4 shadow-inner">
