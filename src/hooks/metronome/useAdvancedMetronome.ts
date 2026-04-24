@@ -1,6 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
-import { getMetronomeAccentForStep } from '../../utils/metronomeAccent';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  getGuitarPatternCellIndex,
+  getGuitarStrumPattern,
+  type GuitarStrumPatternId,
+} from '../../data/guitarStrumPatterns';
+import { getMetronomeAccentForStep, VOICE_COUNT_IN_UTTERANCE_VOLUME } from '../../utils/metronomeAccent';
 import { metronomeAudio, type MetronomeSound } from '../../utils/metronomeAudio';
+
+export type { GuitarStrumPatternId } from '../../data/guitarStrumPatterns';
 type PlaybackState = 'stopped' | 'lead-in' | 'playing';
 export type BeatSource =
   | 'sounds'
@@ -8,9 +15,65 @@ export type BeatSource =
   | 'syllables'
   | 'tabla-bols'
   | 'guitar-strum'
+  | 'reggae-one-drop'
+  | 'ska-offbeat-chank'
+  | 'bossa-8'
+  | 'salsa-montuno-8'
+  | 'samba-partido-8'
   | 'piano-arpeggio'
   | 'violin-legato'
   | 'drums-pattern';
+
+const GROOVE_BEAT_SOURCE_PATTERN_ID = {
+  'reggae-one-drop': 'reggae-offbeat',
+  'ska-offbeat-chank': 'ska-chank',
+  'bossa-8': 'bossa-nova-8',
+  'salsa-montuno-8': 'montuno-8',
+  'samba-partido-8': 'partido-samba-8',
+} as const satisfies Record<string, GuitarStrumPatternId>;
+
+type GrooveFixedBeatSource = keyof typeof GROOVE_BEAT_SOURCE_PATTERN_ID;
+
+export function getGroovePatternIdForBeatSource(
+  source: BeatSource,
+): GuitarStrumPatternId | null {
+  if (source in GROOVE_BEAT_SOURCE_PATTERN_ID) {
+    return GROOVE_BEAT_SOURCE_PATTERN_ID[source as GrooveFixedBeatSource];
+  }
+  return null;
+}
+
+/** @deprecated use getGroovePatternIdForBeatSource */
+export const getGuitarPatternIdForBeatSource = getGroovePatternIdForBeatSource;
+
+export type StepAudioRole = 'rest' | 'ghost' | 'hit';
+
+function computeStepAudioRoles(
+  totalBeats: number,
+  beatSource: BeatSource,
+  guitarStrumPatternId: GuitarStrumPatternId,
+): StepAudioRole[] {
+  const grooveId = getGroovePatternIdForBeatSource(beatSource);
+  const isGridPattern = beatSource === 'guitar-strum' || grooveId !== null;
+  if (!isGridPattern) {
+    return Array.from({ length: totalBeats }, () => 'hit' as const);
+  }
+  const patternId =
+    beatSource === 'guitar-strum' ? guitarStrumPatternId : (grooveId ?? 'old-faithful');
+  const gPat = getGuitarStrumPattern(patternId);
+  return Array.from({ length: totalBeats }, (_, step) => {
+    const gi = getGuitarPatternCellIndex(step, totalBeats, gPat.steps.length);
+    const cell = gPat.steps[gi] ?? 'R';
+    if (cell === 'R') {
+      return 'rest';
+    }
+    if (cell === 'G') {
+      return 'ghost';
+    }
+    return 'hit';
+  });
+}
+
 export type CountInMode = 'sounds' | 'voice';
 export type MeterPresetId =
   | '4-4-quarter'
@@ -82,7 +145,8 @@ export const useAdvancedMetronome = (
   meterPresetId: MeterPresetId = '4-4-quarter',
   leadInEnabled = true,
   beatSource: BeatSource = 'sounds',
-  countInMode: CountInMode = 'sounds'
+  countInMode: CountInMode = 'sounds',
+  guitarStrumPatternId: GuitarStrumPatternId = 'old-faithful',
 ) => {
   const [playbackState, setPlaybackState] = useState<PlaybackState>('stopped');
   const [bpm, setBpm] = useState(90);
@@ -105,6 +169,11 @@ export const useAdvancedMetronome = (
   const { beatsPerBar, stepsPerBeat, accentedBeats } = selectedMeterPreset;
   const totalBeats = beatsPerBar * stepsPerBeat;
   const secondsPerStep = 60 / bpm / stepsPerBeat;
+
+  const stepAudioRoles = useMemo(
+    () => computeStepAudioRoles(totalBeats, beatSource, guitarStrumPatternId),
+    [totalBeats, beatSource, guitarStrumPatternId],
+  );
 
   useEffect(() => {
     return () => {
@@ -163,7 +232,7 @@ export const useAdvancedMetronome = (
           const utterance = new SpeechSynthesisUtterance(label);
           utterance.rate = Math.min(1.5, Math.max(1, bpm / 90));
           utterance.pitch = 1;
-          utterance.volume = 1;
+          utterance.volume = VOICE_COUNT_IN_UTTERANCE_VOLUME;
           window.speechSynthesis.speak(utterance);
         };
 
@@ -312,9 +381,41 @@ export const useAdvancedMetronome = (
           case 'tabla-bols':
             metronomeAudio.playTablaBolAt(t, step % 4, accentLevel);
             break;
-          case 'guitar-strum':
-            metronomeAudio.playGuitarStrumAt(t, step % 2 === 0 ? 'down' : 'up', accentLevel);
+          case 'guitar-strum': {
+            const gPat = getGuitarStrumPattern(guitarStrumPatternId);
+            const gi = getGuitarPatternCellIndex(step, totalBeats, gPat.steps.length);
+            const cell = gPat.steps[gi] ?? 'R';
+            metronomeAudio.playGuitarStrumStepAt(t, cell, accentLevel);
             break;
+          }
+          case 'reggae-one-drop':
+          case 'ska-offbeat-chank':
+          case 'bossa-8':
+          case 'salsa-montuno-8':
+          case 'samba-partido-8': {
+            const patternId = getGroovePatternIdForBeatSource(beatSource) ?? 'old-faithful';
+            const gPat = getGuitarStrumPattern(patternId);
+            const gi = getGuitarPatternCellIndex(step, totalBeats, gPat.steps.length);
+            const cell = gPat.steps[gi] ?? 'R';
+            switch (beatSource) {
+              case 'reggae-one-drop':
+                metronomeAudio.playReggaeOneDropStepAt(t, cell, accentLevel);
+                break;
+              case 'ska-offbeat-chank':
+                metronomeAudio.playSkaChankStepAt(t, cell, accentLevel);
+                break;
+              case 'bossa-8':
+                metronomeAudio.playBossaNylonStepAt(t, cell, accentLevel);
+                break;
+              case 'salsa-montuno-8':
+                metronomeAudio.playSalsaMontunoPianoStepAt(t, cell, accentLevel);
+                break;
+              case 'samba-partido-8':
+                metronomeAudio.playSambaPartidoStepAt(t, cell, accentLevel);
+                break;
+            }
+            break;
+          }
           case 'piano-arpeggio':
             metronomeAudio.playPianoNoteAt(t, step % 4, accentLevel);
             break;
@@ -384,6 +485,7 @@ export const useAdvancedMetronome = (
     accentedBeats,
     beatSource,
     countInMode,
+    guitarStrumPatternId,
   ]);
 
   const togglePlay = () => {
@@ -413,5 +515,6 @@ export const useAdvancedMetronome = (
     totalBeats,
     beatsPerBar,
     meterLabel: selectedMeterPreset.label,
+    stepAudioRoles,
   };
 };

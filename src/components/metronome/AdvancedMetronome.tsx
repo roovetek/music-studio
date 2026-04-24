@@ -1,5 +1,12 @@
 import { Play, Plus, Minus, Music2, ChevronDown, Square } from 'lucide-react';
 import {
+  GUITAR_STRUM_PATTERNS,
+  GUITAR_STRUM_FEELS,
+  getGuitarStrumPattern,
+  type GuitarStrumPatternId,
+} from '../../data/guitarStrumPatterns';
+import {
+  getGroovePatternIdForBeatSource,
   meterPresets,
   useAdvancedMetronome,
   type BeatSource,
@@ -14,10 +21,14 @@ import {
 
 const BEAT_SOURCE_PATTERN_HINT: Partial<Record<BeatSource, string>> = {
   'tabla-bols': 'ta · dhin · dhin · na',
-  'guitar-strum': '↓ ↑ ↓ ↑ ↓ ↑ ↓ ↑',
   'piano-arpeggio': 'C · E · G · C′',
   'violin-legato': '— — — —',
   'drums-pattern': 'K · · · S · K · K · · · S · K ·',
+  'reggae-one-drop': 'R R D R R R D R',
+  'ska-offbeat-chank': 'R R U R R R U R',
+  'bossa-8': 'D R D D R U D R',
+  'salsa-montuno-8': 'D R D U D R D U',
+  'samba-partido-8': 'D G D U D D U D',
 };
 
 const SOUND_PATTERN_PLACEHOLDER: Partial<Record<BeatSource, string>> = {
@@ -25,7 +36,14 @@ const SOUND_PATTERN_PLACEHOLDER: Partial<Record<BeatSource, string>> = {
   syllables:
     'Syllables: spoken-style one, ta-ka, ta-ka-di-mi with formant synthesis for subdivisions.',
   'tabla-bols': 'Teentaal-style bols (ta · dhin · dhin · na) synthesized with bandpass formants.',
-  'guitar-strum': 'Strum pattern alternates down / up across each metronome step (emulated chord).',
+  'guitar-strum':
+    'Strum by feel: pick a pattern (D/U, ghosts, rests). Synthesis emulates strum, palm ghost, and silence—swap in real samples from docs when ready.',
+  'reggae-one-drop':
+    'Dub/organ skank: low-mid body on hits, chiff on ghosts. Backbeats 2/4, rests on 1. Web Audio, not guitar.',
+  'ska-offbeat-chank': 'Brassy square chank; brighter on upstrokes, fast decay—Caribbean offbeat feel.',
+  'bossa-8': 'Nylon pluck: soft triangle, longer ring; bossa/MPB syncopation (not strummed guitar).',
+  'salsa-montuno-8': 'Piano-tumbao stab: detuned short piano slice for montuno (not strum).',
+  'samba-partido-8': 'Pandeiro-like body (membrane + low tone) and rim-ghost; samba / pagode pocket.',
   'piano-arpeggio': 'Arpeggio cycles root, third, fifth, octave for each step in the bar.',
   'violin-legato': 'Sustained bow tone with vibrato; length follows each subdivision step.',
   'drums-pattern': '16-step syncopated groove: kick, snare, hi-hat (mapped to your meter grid).',
@@ -34,6 +52,8 @@ const SOUND_PATTERN_PLACEHOLDER: Partial<Record<BeatSource, string>> = {
 export const AdvancedMetronome = () => {
   const [meterPresetId, setMeterPresetId] = useState<MeterPresetId>('4-4-quarter');
   const [beatSource, setBeatSource] = useState<BeatSource>('sounds');
+  const [guitarStrumPatternId, setGuitarStrumPatternId] =
+    useState<GuitarStrumPatternId>('old-faithful');
   const [visualizerMode, setVisualizerMode] = useState<VisualizerMode>('tracker');
   const {
     isPlaying,
@@ -49,10 +69,22 @@ export const AdvancedMetronome = () => {
     secondsPerStep,
     stepsPerBeat,
     totalBeats,
-  } = useAdvancedMetronome(meterPresetId, true, beatSource, 'voice');
+    stepAudioRoles,
+  } = useAdvancedMetronome(meterPresetId, true, beatSource, 'voice', guitarStrumPatternId);
   const [showSoundMenu, setShowSoundMenu] = useState(false);
   const [soundQuery, setSoundQuery] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const formatGuitarStrumHint = (id: GuitarStrumPatternId) => {
+    const steps = getGuitarStrumPattern(id).steps;
+    return steps
+      .map((t) => (t === 'D' ? '↓' : t === 'U' ? '↑' : t === 'G' ? '·' : '—'))
+      .join(' ');
+  };
+  const fixedGroovePatternId = getGroovePatternIdForBeatSource(beatSource);
+  const displayGuitarPatternId: GuitarStrumPatternId =
+    fixedGroovePatternId ?? guitarStrumPatternId;
+  const activeGuitarPattern = getGuitarStrumPattern(displayGuitarPatternId);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -232,6 +264,7 @@ export const AdvancedMetronome = () => {
               totalBeats={totalBeats}
               currentStepTime={currentStepTime}
               secondsPerStep={secondsPerStep}
+              stepAudioRoles={stepAudioRoles}
             />
           </div>
 
@@ -259,6 +292,15 @@ export const AdvancedMetronome = () => {
               <optgroup label="Guitar">
                 <option value="guitar-strum">Strum pattern (down / up)</option>
               </optgroup>
+              <optgroup label="Reggae & Caribbean">
+                <option value="reggae-one-drop">Reggae: one drop (8th) — organ skank</option>
+                <option value="ska-offbeat-chank">Ska: offbeat chank (8th) — brassy chip</option>
+              </optgroup>
+              <optgroup label="Latin (groove)">
+                <option value="bossa-8">Bossa nova (8th) — nylon pluck</option>
+                <option value="salsa-montuno-8">Salsa / montuno (8th) — piano</option>
+                <option value="samba-partido-8">Samba: partido alto (8th) — pandeiro</option>
+              </optgroup>
               <optgroup label="Piano">
                 <option value="piano-arpeggio">Arpeggio (C · E · G · C′)</option>
               </optgroup>
@@ -269,7 +311,11 @@ export const AdvancedMetronome = () => {
                 <option value="drums-pattern">Syncopated groove</option>
               </optgroup>
             </select>
-            {BEAT_SOURCE_PATTERN_HINT[beatSource] ? (
+            {beatSource === 'guitar-strum' || fixedGroovePatternId ? (
+              <p className="metronome-pattern-hint mt-2 font-mono text-xs tracking-tight">
+                {activeGuitarPattern.name}: {formatGuitarStrumHint(displayGuitarPatternId)}
+              </p>
+            ) : BEAT_SOURCE_PATTERN_HINT[beatSource] ? (
               <p className="metronome-pattern-hint mt-2 font-mono text-xs tracking-tight">
                 Pattern: {BEAT_SOURCE_PATTERN_HINT[beatSource]}
               </p>
@@ -281,7 +327,63 @@ export const AdvancedMetronome = () => {
               Sound Pattern
             </label>
 
-            {beatSource === 'sounds' ? (
+            {beatSource === 'guitar-strum' ? (
+              <div className="space-y-2">
+                <label
+                  className="metronome-field-label block text-xs font-semibold uppercase tracking-[0.18em]"
+                  htmlFor="guitar-strum-pattern"
+                >
+                  Strum feel and pattern
+                </label>
+                <select
+                  id="guitar-strum-pattern"
+                  value={guitarStrumPatternId}
+                  onChange={(e) => setGuitarStrumPatternId(e.target.value as GuitarStrumPatternId)}
+                  className="metronome-select w-full rounded-xl px-4 py-3 text-sm outline-none"
+                  aria-label="Guitar strum pattern by feel"
+                >
+                  {GUITAR_STRUM_FEELS.map((feel) => {
+                    const patterns = GUITAR_STRUM_PATTERNS.filter((p) => p.feelId === feel.id);
+                    if (patterns.length === 0) {
+                      return null;
+                    }
+                    return (
+                      <optgroup key={feel.id} label={feel.label}>
+                        {patterns.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })}
+                </select>
+                <p className="metronome-helper-copy text-xs leading-relaxed">
+                  <span className="metronome-helper-strong">Best for: </span>
+                  {activeGuitarPattern.bestFor}
+                </p>
+                <p className="metronome-muted-box rounded-lg px-3 py-2 text-xs">
+                  Notation: {activeGuitarPattern.notation}
+                </p>
+              </div>
+            ) : fixedGroovePatternId ? (
+              <div className="space-y-2">
+                <p className="metronome-helper-copy text-xs leading-relaxed">
+                  <span className="metronome-helper-strong">Pattern: </span>
+                  {activeGuitarPattern.name}
+                </p>
+                <p className="metronome-helper-copy text-xs leading-relaxed">
+                  <span className="metronome-helper-strong">Best for: </span>
+                  {activeGuitarPattern.bestFor}
+                </p>
+                <p className="metronome-muted-box rounded-lg px-3 py-2 text-xs">
+                  Notation: {activeGuitarPattern.notation}
+                </p>
+                <p className="metronome-helper-copy text-xs leading-relaxed">
+                  {SOUND_PATTERN_PLACEHOLDER[beatSource] ?? ''}
+                </p>
+              </div>
+            ) : beatSource === 'sounds' ? (
               <div className="relative">
                 <button
                   type="button"

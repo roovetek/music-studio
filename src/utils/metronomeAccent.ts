@@ -33,6 +33,12 @@ export const ACCENT_BRIGHT: Record<MetronomeAccent, number> = {
 export const SUBDIVISION_GAIN_VS_BEAT = 0.56;
 
 /**
+ * Spoken 1-2-3-4 count-in: Web Speech is very loud at 1.0; this aligns perceived level
+ * with synthesized metronome cues and playback.
+ */
+export const VOICE_COUNT_IN_UTTERANCE_VOLUME = 0.55;
+
+/**
  * @param step — linear index within the bar (0 .. totalStepsInBar-1)
  * @param stepsPerBeat — e.g. 4 for 16th notes in 4/4
  * @param accentedBeats — which beat indices 0..beatsPerBar-1 get a stressed attack

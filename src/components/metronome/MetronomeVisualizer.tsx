@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { StepAudioRole } from '../../hooks/metronome/useAdvancedMetronome';
 import { metronomeAudio } from '../../utils/metronomeAudio';
 
 export type VisualizerMode = 'tracker' | 'pendulum' | 'bouncing-ball';
@@ -11,6 +12,8 @@ interface MetronomeVisualizerProps {
   totalBeats: number;
   currentStepTime: number;
   secondsPerStep: number;
+  /** Per-step pattern from D/U/G/R grid (strum / groove); omitted = all steps "hit". */
+  stepAudioRoles?: readonly StepAudioRole[];
 }
 
 const roundedRect = (
@@ -40,6 +43,7 @@ export const MetronomeVisualizer = ({
   totalBeats,
   currentStepTime,
   secondsPerStep,
+  stepAudioRoles,
 }: MetronomeVisualizerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -71,37 +75,6 @@ export const MetronomeVisualizer = ({
       return;
     }
 
-    const themeStyles = getComputedStyle(canvas);
-    const visualizerBg =
-      themeStyles.getPropertyValue('--metro-visualizer-bg').trim() || 'rgba(15, 23, 42, 0.68)';
-    const visualizerTrack =
-      themeStyles.getPropertyValue('--metro-visualizer-track').trim() || 'rgba(148, 163, 184, 0.45)';
-    const visualizerArm =
-      themeStyles.getPropertyValue('--metro-visualizer-arm').trim() || 'rgba(226, 232, 240, 0.85)';
-    const accentBase = themeStyles.getPropertyValue('--app-accent').trim() || 'rgb(248, 113, 113)';
-    const accentStrong = themeStyles.getPropertyValue('--app-accent-strong').trim() || 'rgb(96, 165, 250)';
-    const iconColor = themeStyles.getPropertyValue('--app-icon-color').trim() || 'rgb(196, 181, 253)';
-    const mutedStrong = themeStyles.getPropertyValue('--app-muted-strong').trim() || 'rgb(52, 211, 153)';
-
-    const themedBeatPalette = [
-      {
-        active: withAlpha(accentBase, 0.84),
-        idle: withAlpha(accentBase, 0.24),
-      },
-      {
-        active: withAlpha(accentStrong, 0.8),
-        idle: withAlpha(accentStrong, 0.2),
-      },
-      {
-        active: withAlpha(iconColor, 0.78),
-        idle: withAlpha(iconColor, 0.22),
-      },
-      {
-        active: withAlpha(mutedStrong, 0.76),
-        idle: withAlpha(mutedStrong, 0.2),
-      },
-    ] as const;
-
     let animationFrameId: number | null = null;
     let resizeObserver: ResizeObserver | null = null;
 
@@ -121,6 +94,41 @@ export const MetronomeVisualizer = ({
         canvas.height = Math.round(height * dpr);
       }
 
+      const themeStyles = getComputedStyle(canvas);
+      const visualizerBg =
+        themeStyles.getPropertyValue('--metro-visualizer-bg').trim() || 'rgba(15, 23, 42, 0.68)';
+      const visualizerTrack =
+        themeStyles.getPropertyValue('--metro-visualizer-track').trim() || 'rgba(148, 163, 184, 0.45)';
+      const visualizerArm =
+        themeStyles.getPropertyValue('--metro-visualizer-arm').trim() || 'rgba(226, 232, 240, 0.85)';
+      const accentBase =
+        themeStyles.getPropertyValue('--app-accent').trim() || 'rgb(248, 113, 113)';
+      const accentStrong =
+        themeStyles.getPropertyValue('--app-accent-strong').trim() || 'rgb(96, 165, 250)';
+      const iconColor =
+        themeStyles.getPropertyValue('--app-icon-color').trim() || 'rgb(196, 181, 253)';
+      const mutedStrong =
+        themeStyles.getPropertyValue('--app-muted-strong').trim() || 'rgb(52, 211, 153)';
+
+      const themedBeatPalette = [
+        {
+          active: withAlpha(accentBase, 0.84),
+          idle: withAlpha(accentBase, 0.24),
+        },
+        {
+          active: withAlpha(accentStrong, 0.8),
+          idle: withAlpha(accentStrong, 0.2),
+        },
+        {
+          active: withAlpha(iconColor, 0.78),
+          idle: withAlpha(iconColor, 0.22),
+        },
+        {
+          active: withAlpha(mutedStrong, 0.76),
+          idle: withAlpha(mutedStrong, 0.2),
+        },
+      ] as const;
+
       context.setTransform(dpr, 0, 0, dpr, 0, 0);
       context.clearRect(0, 0, width, height);
 
@@ -134,6 +142,11 @@ export const MetronomeVisualizer = ({
       const continuousStep = beatCount + stepProgress;
       const quarterMode = totalBeats <= 4;
       const activeBeatIndex = Math.floor(beatCount / stepsPerBeat) % themedBeatPalette.length;
+
+      const patternRoles =
+        stepAudioRoles && stepAudioRoles.length === totalBeats ? stepAudioRoles : null;
+      const stepRole = (index: number): StepAudioRole =>
+        patternRoles?.[index] ?? 'hit';
 
       const getBeatColor = (index: number, isActiveBeat: boolean, isSubdivision: boolean) => {
         const paletteIndex = Math.floor(index / stepsPerBeat) % themedBeatPalette.length;
@@ -171,19 +184,65 @@ export const MetronomeVisualizer = ({
           const isMainBeat = index % stepsPerBeat === 0;
           const isActiveBeat = index === beatCount && isActive;
           const isSubdivision = !isMainBeat;
-          const lift = isActiveBeat ? (quarterMode ? 10 : 8) * (1 - stepProgress) : 0;
+          const role = stepRole(index);
+          const lift =
+            isActiveBeat && role !== 'rest'
+              ? (quarterMode ? 10 : 8) * (1 - stepProgress)
+              : isActiveBeat && role === 'rest'
+                ? 3 * (1 - stepProgress)
+                : 0;
 
-          context.fillStyle = getBeatColor(index, isActiveBeat, isSubdivision);
-
-          roundedRect(
-            context,
-            x,
-            baseY - lift,
-            segmentWidth,
-            segmentHeight + lift,
-            segmentHeight / 2,
-          );
-          context.fill();
+          if (role === 'rest') {
+            context.fillStyle = isActiveBeat
+              ? `rgba(30, 41, 59, ${0.38 + 0.2 * (1 - stepProgress)})`
+              : 'rgba(15, 23, 42, 0.2)';
+            roundedRect(
+              context,
+              x,
+              baseY - lift,
+              segmentWidth,
+              segmentHeight + lift,
+              segmentHeight / 2,
+            );
+            context.fill();
+            if (isActiveBeat) {
+              context.strokeStyle = `rgba(148, 163, 184, ${0.35 + 0.35 * (1 - stepProgress)})`;
+              context.lineWidth = 1.5;
+              roundedRect(
+                context,
+                x,
+                baseY - lift,
+                segmentWidth,
+                segmentHeight + lift,
+                segmentHeight / 2,
+              );
+              context.stroke();
+            }
+          } else if (role === 'ghost') {
+            context.fillStyle = isActiveBeat
+              ? withAlpha(mutedStrong, 0.48 + 0.28 * (1 - stepProgress))
+              : withAlpha(mutedStrong, 0.2);
+            roundedRect(
+              context,
+              x,
+              baseY - lift,
+              segmentWidth,
+              segmentHeight + lift,
+              segmentHeight / 2,
+            );
+            context.fill();
+          } else {
+            context.fillStyle = getBeatColor(index, isActiveBeat, isSubdivision);
+            roundedRect(
+              context,
+              x,
+              baseY - lift,
+              segmentWidth,
+              segmentHeight + lift,
+              segmentHeight / 2,
+            );
+            context.fill();
+          }
         }
       }
 
@@ -196,6 +255,17 @@ export const MetronomeVisualizer = ({
         const bobX = centerX + Math.sin(angle) * armLength;
         const bobY = topY + Math.cos(angle) * armLength;
         const palette = themedBeatPalette[activeBeatIndex];
+        const pendulumStep =
+          totalBeats > 0 ? ((beatCount % totalBeats) + totalBeats) % totalBeats : 0;
+        const pRole = stepRole(pendulumStep);
+        const bobFill =
+          pRole === 'rest'
+            ? 'rgba(100, 116, 139, 0.55)'
+            : pRole === 'ghost'
+              ? withAlpha(mutedStrong, 0.88)
+              : palette.active.includes('%alpha%')
+                ? palette.active.replace('%alpha%', '0.92')
+                : palette.active;
 
         context.strokeStyle = visualizerTrack;
         context.lineWidth = 4;
@@ -211,9 +281,7 @@ export const MetronomeVisualizer = ({
         context.lineTo(bobX, bobY);
         context.stroke();
 
-        context.fillStyle = palette.active.includes('%alpha%')
-          ? palette.active.replace('%alpha%', '0.92')
-          : palette.active;
+        context.fillStyle = bobFill;
         context.beginPath();
         context.arc(bobX, bobY, 12, 0, Math.PI * 2);
         context.fill();
@@ -228,6 +296,19 @@ export const MetronomeVisualizer = ({
         const bounce = 1 - 4 * Math.pow(stepProgress - 0.5, 2);
         const y = baselineY - Math.max(0, bounce) * (height * 0.48);
         const palette = themedBeatPalette[activeBeatIndex];
+        const bounceStep =
+          totalBeats > 0
+            ? ((Math.floor(continuousStep) % totalBeats) + totalBeats) % totalBeats
+            : 0;
+        const bRole = stepRole(bounceStep);
+        const ballFill =
+          bRole === 'rest'
+            ? 'rgba(100, 116, 139, 0.55)'
+            : bRole === 'ghost'
+              ? withAlpha(mutedStrong, 0.9)
+              : palette.active.includes('%alpha%')
+                ? palette.active.replace('%alpha%', '0.94')
+                : palette.active;
 
         context.strokeStyle = visualizerTrack;
         context.lineWidth = 3;
@@ -236,9 +317,7 @@ export const MetronomeVisualizer = ({
         context.lineTo(width - paddingX, baselineY);
         context.stroke();
 
-        context.fillStyle = palette.active.includes('%alpha%')
-          ? palette.active.replace('%alpha%', '0.94')
-          : palette.active;
+        context.fillStyle = ballFill;
         context.beginPath();
         context.arc(x, y, 12, 0, Math.PI * 2);
         context.fill();
@@ -266,7 +345,7 @@ export const MetronomeVisualizer = ({
       }
       resizeObserver?.disconnect();
     };
-  }, [beatCount, currentStepTime, isActive, mode, secondsPerStep, stepsPerBeat, totalBeats]);
+  }, [beatCount, currentStepTime, isActive, mode, secondsPerStep, stepAudioRoles, stepsPerBeat, totalBeats]);
 
   return <canvas ref={canvasRef} className="w-full h-[132px] rounded-2xl" aria-hidden="true" />;
 };

@@ -11,11 +11,12 @@ The **Advanced Metronome** (Studio) is a React + Web Audio metronome: synthesize
 | State, playback, lead-in, **scheduling** | [`src/hooks/metronome/useAdvancedMetronome.ts`](../src/hooks/metronome/useAdvancedMetronome.ts) |
 | **Audio engine** (single `AudioContext`, master gain) | [`src/utils/metronome/metronomeEngine.ts`](../src/utils/metronome/metronomeEngine.ts) |
 | **Kit sounds** (nine `MetronomeSound` timbres) | [`src/utils/metronome/kit.ts`](../src/utils/metronome/kit.ts) |
-| **Pattern / instrument** modes (tabla, guitar, piano, violin, drums) | [`src/utils/metronome/patternSynth.ts`](../src/utils/metronome/patternSynth.ts) |
+| **Pattern / instrument** modes (tabla, guitar, piano, violin, drums, world grooves) | [`src/utils/metronome/patternSynth.ts`](../src/utils/metronome/patternSynth.ts) |
 | Sound list + per-sound output trim (metadata) | [`src/utils/metronome/catalog.ts`](../src/utils/metronome/catalog.ts) |
 | Shared accent tiers (`none` / `normal` / `first`) | [`src/utils/metronomeAccent.ts`](../src/utils/metronomeAccent.ts) |
 | Public barrel (re-exports) | [`src/utils/metronomeAudio.ts`](../src/utils/metronomeAudio.ts) |
 | **UI themes** (8 practice-focused presets, CSS variables) | [`src/lib/themes.ts`](../src/lib/themes.ts), [`src/index.css`](../src/index.css) (`[data-theme]` on the app shell) |
+| **Guitar strum patterns (by “feel”)** | [`src/data/guitarStrumPatterns.ts`](../src/data/guitarStrumPatterns.ts); optional real samples: [docs/guitar-samples.md](guitar-samples.md), [`public/samples/guitar/`](../public/samples/guitar/) |
 
 ## Data flow
 
@@ -42,6 +43,7 @@ flowchart LR
 - **`vocal`**: short formant-style pulse.
 - **`syllables`**: `ta` / `ka` / `di` / `mi` (or `ta` / `ka` in 8th-based meters) with per-step syllable selection; subdivisions are attenuated relative to beat attacks.
 - **Pattern modes** (`tabla-bols`, `guitar-strum`, `piano-arpeggio`, `violin-legato`, `drums-pattern`): implemented in [`patternSynth.ts`](../src/utils/metronome/patternSynth.ts).
+- **World groove modes** (Reggae, Ska, Bossa, Salsa/montuno, Samba) use their own `BeatSource` values (`reggae-one-drop`, `ska-offbeat-chank`, `bossa-8`, `salsa-montuno-8`, `samba-partido-8`). Timing still uses the D/U/G/R cell grids in [`guitarStrumPatterns.ts`](../src/data/guitarStrumPatterns.ts), but each mode has a **dedicated** synthesized timbre in `patternSynth.ts` (organ skank, brassy chank, nylon pluck, piano stab, pandeiro-like body) rather than the guitar strum model.
 
 ## Accents
 
@@ -57,7 +59,11 @@ Shared gain/duration/brightness multipliers for many paths are `ACCENT_MULT`, `A
 
 ## Lead-in
 
-With lead-in enabled, the hook enters a **`lead-in`** state: optional `speechSynthesis` or short **count-in clicks** from `playCountInCueAt` on the engine, then switches to **`playing`** and aligns `nextStepTimeRef` so bar 1 starts after the count.
+With lead-in enabled, the hook enters a **`lead-in`** state: optional `speechSynthesis` (volume from `VOICE_COUNT_IN_UTTERANCE_VOLUME` in [`metronomeAccent.ts`](../src/utils/metronomeAccent.ts)) or short **count-in clicks** from `playCountInCueAt` (gain matched to a normal **woodblock** click via `ACCENT_MULT.normal * soundOutputTrim.woodblock`), then switches to **`playing`** and aligns `nextStepTimeRef` so bar 1 starts after the count.
+
+## Visualizer and strum pattern
+
+[`MetronomeVisualizer.tsx`](../src/components/metronome/MetronomeVisualizer.tsx) receives **`stepAudioRoles`** from the hook: per step, `rest` / `ghost` / `hit` from the same D/U/G/R grid used for **guitar-strum** and world groove sources, so the pulse bar (and pendulum / bounce ball) shows silent and ghost steps distinctly.
 
 ## Performance notes
 

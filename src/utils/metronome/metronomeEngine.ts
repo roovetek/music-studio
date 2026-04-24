@@ -1,3 +1,4 @@
+import type { StrumToken } from '../../data/guitarStrumPatterns';
 import {
   ACCENT_BRIGHT,
   ACCENT_DURATION,
@@ -9,8 +10,13 @@ import { soundOutputTrim, type MetronomeSound } from './catalog';
 import { playKitBySoundId } from './kit';
 import {
   playDrumPatternStepAt as patternDrumStep,
-  playGuitarStrumAt as patternGuitarStrum,
+  playGuitarStrumTokenAt as patternGuitarStrumToken,
   playPianoNoteAt as patternPianoNote,
+  playReggaeOneDropTokenAt as patternReggaeOneDrop,
+  playSkaChankTokenAt as patternSkaChank,
+  playBossaNylonTokenAt as patternBossaNylon,
+  playSalsaMontunoPianoTokenAt as patternSalsaMontuno,
+  playSambaPartidoTokenAt as patternSambaPartido,
   playTablaBolAt as patternTablaBol,
   playViolinBowAt as patternViolinBow,
 } from './patternSynth';
@@ -102,10 +108,15 @@ class MetronomeAudioEngine {
     filter.frequency.setValueAtTime(1200, time);
     filter.Q.value = 2.6;
 
-    gainNode.gain.setValueAtTime(index === 0 ? 0.42 : 0.34, time);
+    /** Match a typical "normal" woodblock click (kit gain × per-sound trim). */
+    const targetPeak = ACCENT_MULT.normal * soundOutputTrim.woodblock;
+    const firstBoost = 1.08;
+    const otherScale = 0.88;
+    const peak = index === 0 ? targetPeak * firstBoost : targetPeak * otherScale;
+    gainNode.gain.setValueAtTime(peak, time);
     gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.16);
 
-    cueTrim.gain.value = 0.86;
+    cueTrim.gain.value = 1;
 
     oscillator.connect(filter);
     overtone.connect(filter);
@@ -382,15 +393,60 @@ class MetronomeAudioEngine {
     patternTablaBol(ctx, time, bolIndex, accentLevel, (g) => this.connectPatternOutput(ctx, g));
   }
 
-  playGuitarStrumAt(
+  playGuitarStrumStepAt(
     time: number,
-    direction: 'down' | 'up',
+    token: StrumToken,
     accentLevel: MetronomeAccent = 'none',
   ) {
     const ctx = this.getAudioContext();
-    patternGuitarStrum(ctx, time, direction, accentLevel, (g) =>
+    patternGuitarStrumToken(ctx, time, token, accentLevel, (g) =>
       this.connectPatternOutput(ctx, g),
     );
+  }
+
+  playReggaeOneDropStepAt(
+    time: number,
+    token: StrumToken,
+    accentLevel: MetronomeAccent = 'none',
+  ) {
+    const ctx = this.getAudioContext();
+    patternReggaeOneDrop(ctx, time, token, accentLevel, (g) => this.connectPatternOutput(ctx, g));
+  }
+
+  playSkaChankStepAt(
+    time: number,
+    token: StrumToken,
+    accentLevel: MetronomeAccent = 'none',
+  ) {
+    const ctx = this.getAudioContext();
+    patternSkaChank(ctx, time, token, accentLevel, (g) => this.connectPatternOutput(ctx, g));
+  }
+
+  playBossaNylonStepAt(
+    time: number,
+    token: StrumToken,
+    accentLevel: MetronomeAccent = 'none',
+  ) {
+    const ctx = this.getAudioContext();
+    patternBossaNylon(ctx, time, token, accentLevel, (g) => this.connectPatternOutput(ctx, g));
+  }
+
+  playSalsaMontunoPianoStepAt(
+    time: number,
+    token: StrumToken,
+    accentLevel: MetronomeAccent = 'none',
+  ) {
+    const ctx = this.getAudioContext();
+    patternSalsaMontuno(ctx, time, token, accentLevel, (g) => this.connectPatternOutput(ctx, g));
+  }
+
+  playSambaPartidoStepAt(
+    time: number,
+    token: StrumToken,
+    accentLevel: MetronomeAccent = 'none',
+  ) {
+    const ctx = this.getAudioContext();
+    patternSambaPartido(ctx, time, token, accentLevel, (g) => this.connectPatternOutput(ctx, g));
   }
 
   playPianoNoteAt(

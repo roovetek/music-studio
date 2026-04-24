@@ -1,3 +1,4 @@
+import type { StrumToken } from '../../data/guitarStrumPatterns';
 import { ACCENT_MULT, type MetronomeAccent } from '../metronomeAccent';
 
 export type ConnectPattern = (node: GainNode) => void;
@@ -164,6 +165,33 @@ export function playTablaBolAt(
   o2.stop(time + d);
 }
 
+function playGuitarPalmGhostAt(
+  ctx: AudioContext,
+  time: number,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  const base =
+    accentLevel === 'first' ? 0.05 : accentLevel === 'normal' ? 0.042 : 0.034;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  const f = ctx.createBiquadFilter();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(145, time);
+  o.frequency.exponentialRampToValueAtTime(90, time + 0.038);
+  f.type = 'lowpass';
+  f.frequency.value = 420;
+  f.Q.value = 0.7;
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.linearRampToValueAtTime(base, time + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.045);
+  o.connect(f);
+  f.connect(g);
+  out(g);
+  o.start(time);
+  o.stop(time + 0.05);
+}
+
 export function playGuitarStrumAt(
   ctx: AudioContext,
   time: number,
@@ -197,6 +225,308 @@ export function playGuitarStrumAt(
     osc.start(t0);
     osc.stop(t0 + decay + 0.02);
   }
+}
+
+/** D / U = full strum, G = palm / ghost, R = silent */
+export function playGuitarStrumTokenAt(
+  ctx: AudioContext,
+  time: number,
+  token: StrumToken,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  if (token === 'R') {
+    return;
+  }
+  if (token === 'G') {
+    playGuitarPalmGhostAt(ctx, time, accentLevel, out);
+    return;
+  }
+  playGuitarStrumAt(ctx, time, token === 'D' ? 'down' : 'up', accentLevel, out);
+}
+
+function makeNoiseBuffer(ctx: AudioContext, seconds: number): AudioBuffer {
+  const n = Math.max(1, Math.ceil(ctx.sampleRate * seconds));
+  const b = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = b.getChannelData(0);
+  for (let i = 0; i < n; i += 1) {
+    d[i] = Math.random() * 2 - 1;
+  }
+  return b;
+}
+
+function reggaeGhostChiff(ctx: AudioContext, time: number, level: number, out: ConnectPattern) {
+  const src = ctx.createBufferSource();
+  src.buffer = makeNoiseBuffer(ctx, 0.04);
+  const f = ctx.createBiquadFilter();
+  const g = ctx.createGain();
+  f.type = 'bandpass';
+  f.frequency.value = 900;
+  f.Q.value = 1.1;
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.linearRampToValueAtTime(0.04 * level, time + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.001, time + 0.035);
+  src.connect(f);
+  f.connect(g);
+  out(g);
+  src.start(time);
+  src.stop(time + 0.045);
+}
+
+/** Organ-skank: low-mid; U brighter than D; G = chiff, R = silent. */
+export function playReggaeOneDropTokenAt(
+  ctx: AudioContext,
+  time: number,
+  token: StrumToken,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  if (token === 'R') {
+    return;
+  }
+  const level = ACCENT_MULT[accentLevel];
+  if (token === 'G') {
+    reggaeGhostChiff(ctx, time, level, out);
+    return;
+  }
+  const up = token === 'U';
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  const bp = ctx.createBiquadFilter();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(196, time);
+  o.frequency.exponentialRampToValueAtTime(165, time + 0.08);
+  bp.type = 'bandpass';
+  bp.frequency.value = up ? 480 : 320;
+  bp.Q.value = 1.4;
+  const peak = (accentLevel === 'first' ? 0.11 : accentLevel === 'normal' ? 0.095 : 0.078) * level;
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.exponentialRampToValueAtTime(peak, time + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
+  o.connect(bp);
+  bp.connect(g);
+  out(g);
+  o.start(time);
+  o.stop(time + 0.12);
+}
+
+/** Brassy offbeat chank. */
+export function playSkaChankTokenAt(
+  ctx: AudioContext,
+  time: number,
+  token: StrumToken,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  if (token === 'R') {
+    return;
+  }
+  const level = ACCENT_MULT[accentLevel];
+  if (token === 'G') {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    const hp = ctx.createBiquadFilter();
+    o.type = 'square';
+    o.frequency.value = 880;
+    hp.type = 'highpass';
+    hp.frequency.value = 2000;
+    g.gain.setValueAtTime(0.001, time);
+    g.gain.exponentialRampToValueAtTime(0.04 * level, time + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.001, time + 0.028);
+    o.connect(hp);
+    hp.connect(g);
+    out(g);
+    o.start(time);
+    o.stop(time + 0.04);
+    return;
+  }
+  const up = token === 'U';
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  const bp = ctx.createBiquadFilter();
+  o.type = 'square';
+  o.frequency.value = up ? 1240 : 720;
+  bp.type = 'bandpass';
+  bp.frequency.value = up ? 2200 : 1500;
+  bp.Q.value = 2.2;
+  const peak = (up ? 0.12 : 0.1) * level;
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.exponentialRampToValueAtTime(peak, time + 0.0025);
+  g.gain.exponentialRampToValueAtTime(0.01, time + 0.055);
+  o.connect(bp);
+  bp.connect(g);
+  out(g);
+  o.start(time);
+  o.stop(time + 0.07);
+}
+
+/** Soft nylon-ish pluck. */
+export function playBossaNylonTokenAt(
+  ctx: AudioContext,
+  time: number,
+  token: StrumToken,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  if (token === 'R') {
+    return;
+  }
+  const level = ACCENT_MULT[accentLevel];
+  if (token === 'G') {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+    o.type = 'triangle';
+    o.frequency.value = 196;
+    lp.type = 'lowpass';
+    lp.frequency.value = 800;
+    g.gain.setValueAtTime(0.001, time);
+    g.gain.exponentialRampToValueAtTime(0.045 * level, time + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.001, time + 0.08);
+    o.connect(lp);
+    lp.connect(g);
+    out(g);
+    o.start(time);
+    o.stop(time + 0.1);
+    return;
+  }
+  const up = token === 'U';
+  const f0 = up ? 349.23 : 329.63;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  const lp = ctx.createBiquadFilter();
+  o.type = 'triangle';
+  o.frequency.value = f0;
+  lp.type = 'lowpass';
+  lp.frequency.value = 2200;
+  lp.Q.value = 0.5;
+  const peak = (accentLevel === 'first' ? 0.15 : 0.12) * level;
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.linearRampToValueAtTime(peak, time + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.01, time + 0.32);
+  o.connect(lp);
+  lp.connect(g);
+  out(g);
+  o.start(time);
+  o.stop(time + 0.45);
+}
+
+/** Short piano / montuno stab. */
+export function playSalsaMontunoPianoTokenAt(
+  ctx: AudioContext,
+  time: number,
+  token: StrumToken,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  if (token === 'R') {
+    return;
+  }
+  const level = ACCENT_MULT[accentLevel];
+  if (token === 'G') {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = 330;
+    g.gain.setValueAtTime(0.001, time);
+    g.gain.exponentialRampToValueAtTime(0.04 * level, time + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+    o.connect(g);
+    out(g);
+    o.start(time);
+    o.stop(time + 0.08);
+    return;
+  }
+  const up = token === 'U';
+  const f1 = up ? 392 : 261.63;
+  const f2 = f1 * 1.01;
+  const o1 = ctx.createOscillator();
+  const o2 = ctx.createOscillator();
+  const g = ctx.createGain();
+  const lp = ctx.createBiquadFilter();
+  o1.type = 'triangle';
+  o2.type = 'sawtooth';
+  o1.frequency.value = f1;
+  o2.frequency.value = f2;
+  lp.type = 'lowpass';
+  lp.frequency.value = 3000;
+  const mix = ctx.createGain();
+  const peak = (accentLevel === 'first' ? 0.11 : 0.095) * level;
+  g.gain.setValueAtTime(0.001, time);
+  g.gain.exponentialRampToValueAtTime(peak, time + 0.003);
+  g.gain.exponentialRampToValueAtTime(0.01, time + 0.14);
+  o1.connect(mix);
+  o2.connect(mix);
+  mix.connect(lp);
+  lp.connect(g);
+  out(g);
+  o1.start(time);
+  o2.start(time);
+  o1.stop(time + 0.16);
+  o2.stop(time + 0.16);
+}
+
+/** Pandeiro-like body and rim-ghost. */
+export function playSambaPartidoTokenAt(
+  ctx: AudioContext,
+  time: number,
+  token: StrumToken,
+  accentLevel: MetronomeAccent,
+  out: ConnectPattern,
+) {
+  if (token === 'R') {
+    return;
+  }
+  const level = ACCENT_MULT[accentLevel];
+  if (token === 'G') {
+    const n = ctx.createBufferSource();
+    n.buffer = makeNoiseBuffer(ctx, 0.025);
+    const hp = ctx.createBiquadFilter();
+    const g = ctx.createGain();
+    hp.type = 'highpass';
+    hp.frequency.value = 5000;
+    g.gain.setValueAtTime(0.03 * level, time);
+    g.gain.exponentialRampToValueAtTime(0.001, time + 0.02);
+    n.connect(hp);
+    hp.connect(g);
+    out(g);
+    n.start(time);
+    n.stop(time + 0.03);
+    return;
+  }
+  const o = ctx.createOscillator();
+  const n = ctx.createBufferSource();
+  n.buffer = makeNoiseBuffer(ctx, 0.06);
+  const f = ctx.createBiquadFilter();
+  const nF = ctx.createBiquadFilter();
+  const gO = ctx.createGain();
+  const gN = ctx.createGain();
+  const sum = ctx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(180, time);
+  o.frequency.exponentialRampToValueAtTime(90, time + 0.1);
+  f.type = 'lowpass';
+  f.frequency.value = 400;
+  nF.type = 'bandpass';
+  nF.frequency.value = 350;
+  nF.Q.value = 0.8;
+  const body = 0.11 * level;
+  gO.gain.setValueAtTime(0.001, time);
+  gO.gain.exponentialRampToValueAtTime(body, time + 0.002);
+  gO.gain.exponentialRampToValueAtTime(0.01, time + 0.12);
+  gN.gain.setValueAtTime(0.06 * level, time);
+  gN.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
+  o.connect(f);
+  f.connect(gO);
+  n.connect(nF);
+  nF.connect(gN);
+  gO.connect(sum);
+  gN.connect(sum);
+  out(sum);
+  o.start(time);
+  n.start(time);
+  o.stop(time + 0.15);
+  n.stop(time + 0.07);
 }
 
 export function playPianoNoteAt(
