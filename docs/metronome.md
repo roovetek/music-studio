@@ -10,6 +10,8 @@ The **Advanced Metronome** (Studio) is a React + Web Audio metronome: synthesize
 | Visual tracker / pendulum | [`src/components/metronome/MetronomeVisualizer.tsx`](../src/components/metronome/MetronomeVisualizer.tsx) |
 | State, playback, lead-in, **scheduling** | [`src/hooks/metronome/useAdvancedMetronome.ts`](../src/hooks/metronome/useAdvancedMetronome.ts) |
 | **Audio engine** (single `AudioContext`, master gain) | [`src/utils/metronome/metronomeEngine.ts`](../src/utils/metronome/metronomeEngine.ts) |
+| **Output graph** (per-sound + pattern bus → shared `METRONOME_MASTER_GAIN`) | [`src/utils/metronome/metronomeOutputGraph.ts`](../src/utils/metronome/metronomeOutputGraph.ts) |
+| **Loudness metrics** (peak / short RMS for calibration) | [`src/utils/metronome/loudnessMetrics.ts`](../src/utils/metronome/loudnessMetrics.ts) |
 | **Kit sounds** (nine `MetronomeSound` timbres) | [`src/utils/metronome/kit.ts`](../src/utils/metronome/kit.ts) |
 | **Pattern / instrument** modes (tabla, guitar, piano, violin, drums, world grooves) | [`src/utils/metronome/patternSynth.ts`](../src/utils/metronome/patternSynth.ts) |
 | Sound list + per-sound output trim (metadata) | [`src/utils/metronome/catalog.ts`](../src/utils/metronome/catalog.ts) |
@@ -43,7 +45,7 @@ flowchart LR
 - **`vocal`**: short formant-style pulse.
 - **`syllables`**: `ta` / `ka` / `di` / `mi` (or `ta` / `ka` in 8th-based meters) with per-step syllable selection; subdivisions are attenuated relative to beat attacks.
 - **Pattern modes** (`tabla-bols`, `guitar-strum`, `piano-arpeggio`, `violin-legato`, `drums-pattern`): implemented in [`patternSynth.ts`](../src/utils/metronome/patternSynth.ts).
-- **World groove modes** (Reggae, Ska, Bossa, Salsa/montuno, Samba) use their own `BeatSource` values (`reggae-one-drop`, `ska-offbeat-chank`, `bossa-8`, `salsa-montuno-8`, `samba-partido-8`). Timing still uses the D/U/G/R cell grids in [`guitarStrumPatterns.ts`](../src/data/guitarStrumPatterns.ts), but each mode has a **dedicated** synthesized timbre in `patternSynth.ts` (organ skank, brassy chank, nylon pluck, piano stab, pandeiro-like body) rather than the guitar strum model.
+- **World groove modes** (Reggae, Ska, Bossa, Salsa/montuno, Samba) use their own `BeatSource` values (e.g. `reggae-one-drop`, `reggae-steppers-8`, `ska-offbeat-chank`, `bossa-8`, `salsa-montuno-8`, `samba-partido-8`). Timing still uses the D/U/G/R cell grids in [`guitarStrumPatterns.ts`](../src/data/guitarStrumPatterns.ts), but each mode has a **dedicated** synthesized timbre in `patternSynth.ts` (reggae and steppers share the organ skank; then brassy chank, nylon pluck, piano stab, pandeiro-like body) rather than the guitar strum model.
 
 ## Accents
 
@@ -63,12 +65,18 @@ With lead-in enabled, the hook enters a **`lead-in`** state: optional `speechSyn
 
 ## Visualizer and strum pattern
 
-[`MetronomeVisualizer.tsx`](../src/components/metronome/MetronomeVisualizer.tsx) receives **`stepAudioRoles`** from the hook: per step, `rest` / `ghost` / `hit` from the same D/U/G/R grid used for **guitar-strum** and world groove sources, so the pulse bar (and pendulum / bounce ball) shows silent and ghost steps distinctly.
+[`MetronomeVisualizer.tsx`](../src/components/metronome/MetronomeVisualizer.tsx) receives **`stepAudioRoles`** and **`stepStrumTokens`** from the hook (guitar-strum and world groove sources). **R** / **G** / **D** / **U** come from the same grid as audio. Downstrokes and upstrokes use theme CSS variables **`--metro-pulse-down`** (slate) and **`--metro-pulse-up`** (contrasting accent); **R** and **G** use dim and muted-green styling. Pendulum and bounce ball tints the bob by the current step’s token.
+
+## Output level (objective, one-shots)
+
+- **Not LUFS** as the primary number: EBU R128 / ITU-R BS.1770 are built for long-form program loudness. Metronome hits are 40–200 ms; the practical target is **full-scale sample peak** after the real graph (per-sound trim → shared master ≈0.82), with a **roughly -1 dBFS** (linear ≈0.89) headroom, matching common transient / click alignment practice.
+- **Dev script**: `npm run calibrate-metronome` runs [`scripts/calibrate-metronome-levels.ts`](../scripts/calibrate-metronome-levels.ts) (Node + [`web-audio-api`](https://www.npmjs.com/package/web-audio-api) `OfflineAudioContext`). It peak-matches every kit click to **Studio woodblock** at `REF_CATALOG_TRIM` (0.78), then caps trims (1.2) and **tabla** `TABLA_BOL_GAIN` (6.5) so a bad outlier will not require absurd gain. The Node polyfill is not bit-identical to Chrome/Safari; **re-run and spot-check in the browser** if a timbre is off.
+- **Runtime wiring**: [`metronomeOutputGraph.ts`](../src/utils/metronome/metronomeOutputGraph.ts) is the single place for the **kit** and **pattern** bus paths into the same master, used by the engine and by the calibrator for parity.
 
 ## Performance notes
 
 - **Noise buffers** (e.g. syllable consonant burst, snare / hi-hat) are **cached by length** on the engine to avoid allocating `AudioBuffer` on every hit.
-- Pattern outputs use a separate trim path from kit sounds (see `connectPatternOutput` in the engine).
+- Pattern outputs use a separate bus trim (0.88) from kit per-sound trimming (see `connectPatternPathToDestination` in [`metronomeOutputGraph.ts`](../src/utils/metronome/metronomeOutputGraph.ts)).
 
 ## Classic metronome
 

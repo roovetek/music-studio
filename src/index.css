@@ -29,6 +29,10 @@
   --metro-visualizer-bg: rgba(255, 255, 255, 0.58);
   --metro-visualizer-track: rgba(120, 113, 108, 0.25);
   --metro-visualizer-arm: rgba(29, 78, 216, 0.45);
+  /* Pulse bar: D = slate pill, U = accent (guitar / groove) */
+  /* “Down” stroke: must stay visible on both light paper and dark panels */
+  --metro-pulse-down: rgba(71, 85, 105, 0.72);
+  --metro-pulse-up: rgba(29, 78, 216, 0.9);
 }
 
 [data-theme='green-room'] {
@@ -56,6 +60,8 @@
   --metro-visualizer-bg: rgba(5, 15, 10, 0.55);
   --metro-visualizer-track: rgba(110, 231, 183, 0.22);
   --metro-visualizer-arm: rgba(209, 250, 229, 0.9);
+  --metro-pulse-down: rgba(186, 220, 211, 0.92);
+  --metro-pulse-up: rgba(52, 211, 153, 0.9);
 }
 
 [data-theme='booth-take'] {
@@ -83,6 +89,8 @@
   --metro-visualizer-bg: rgba(4, 6, 10, 0.65);
   --metro-visualizer-track: rgba(113, 113, 122, 0.35);
   --metro-visualizer-arm: rgba(230, 230, 250, 0.88);
+  --metro-pulse-down: rgba(212, 212, 220, 0.95);
+  --metro-pulse-up: rgba(190, 242, 100, 0.92);
 }
 
 [data-theme='jazz-afterhours'] {
@@ -110,6 +118,8 @@
   --metro-visualizer-bg: rgba(20, 12, 6, 0.58);
   --metro-visualizer-track: rgba(196, 168, 130, 0.28);
   --metro-visualizer-arm: rgba(255, 251, 235, 0.85);
+  --metro-pulse-down: rgba(254, 215, 170, 0.92);
+  --metro-pulse-up: rgba(251, 191, 36, 0.9);
 }
 
 [data-theme='riyaz-dawn'] {
@@ -137,6 +147,8 @@
   --metro-visualizer-bg: rgba(20, 10, 36, 0.55);
   --metro-visualizer-track: rgba(196, 181, 253, 0.2);
   --metro-visualizer-arm: rgba(254, 243, 199, 0.9);
+  --metro-pulse-down: rgba(199, 210, 254, 0.94);
+  --metro-pulse-up: rgba(251, 191, 36, 0.9);
 }
 
 [data-theme='house-lights'] {
@@ -164,6 +176,8 @@
   --metro-visualizer-bg: rgba(0, 0, 0, 0.55);
   --metro-visualizer-track: rgba(168, 162, 158, 0.22);
   --metro-visualizer-arm: rgba(254, 243, 199, 0.88);
+  --metro-pulse-down: rgba(228, 228, 231, 0.94);
+  --metro-pulse-up: rgba(250, 204, 21, 0.88);
 }
 
 [data-theme='arctic-partitur'] {
@@ -191,6 +205,8 @@
   --metro-visualizer-bg: rgba(255, 255, 255, 0.55);
   --metro-visualizer-track: rgba(71, 85, 105, 0.2);
   --metro-visualizer-arm: rgba(2, 132, 199, 0.5);
+  --metro-pulse-down: rgba(100, 116, 139, 0.85);
+  --metro-pulse-up: rgba(2, 132, 199, 0.88);
 }
 
 [data-theme='subwoofer-haze'] {
@@ -218,6 +234,8 @@
   --metro-visualizer-bg: rgba(16, 12, 28, 0.58);
   --metro-visualizer-track: rgba(196, 181, 253, 0.18);
   --metro-visualizer-arm: rgba(250, 232, 255, 0.88);
+  --metro-pulse-down: rgba(199, 210, 254, 0.95);
+  --metro-pulse-up: rgba(244, 114, 182, 0.9);
 }
 
 .app-shell {
@@ -272,6 +290,354 @@
   border: 1px solid var(--app-select-border);
   color: var(--app-select-text);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.14);
+}
+
+/* Custom themed <select> (see ThemedSelect) — list uses same tokens as the trigger */
+button.themed-select-trigger {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+button.themed-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.themed-select-panel {
+  -webkit-overflow-scrolling: touch;
+  backdrop-filter: blur(18px);
+}
+
+/* Visual style list: listbox chrome is fixed (not the live app theme) so every row’s
+   [data-theme] swatch is read against a stable backdrop, not a wash of the current theme. */
+.themed-select-panel--style-picker.metronome-menu {
+  background: rgba(14, 16, 22, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+  backdrop-filter: blur(20px);
+}
+
+.themed-select-panel--style-picker .themed-select-group + .themed-select-group {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.themed-select-panel--style-picker .themed-select-group-label {
+  color: rgba(200, 205, 220, 0.6);
+}
+
+.themed-select-group {
+  padding-bottom: 0.25rem;
+}
+
+.themed-select-group + .themed-select-group {
+  border-top: 1px solid color-mix(in srgb, var(--app-border) 65%, transparent);
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
+}
+
+.themed-select-group-label {
+  padding: 0.45rem 0.75rem 0.2rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.themed-select-option {
+  display: block;
+  margin: 0 0.2rem 0.1rem;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  padding: 0.5rem 0.6rem 0.55rem;
+  font-size: 0.875rem;
+  line-height: 1.3;
+  color: var(--app-select-text);
+  background: color-mix(in srgb, var(--app-select-bg) 8%, transparent);
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+.themed-select-option:hover,
+.themed-select-option:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--app-panel-strong) 74%, var(--app-accent-soft) 26%);
+  color: var(--app-text);
+}
+
+.themed-select-option.is-active {
+  border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-select-border) 52%);
+  background: color-mix(in srgb, var(--app-accent-soft) 62%, var(--app-select-bg) 38%);
+  color: var(--app-text);
+}
+
+/* Visual style: list rows + header trigger; inner [data-theme] swatch picks palette */
+button.themed-select-swatch-host {
+  padding: 0.15rem 0.2rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+}
+
+button.themed-select-swatch-host:hover,
+button.themed-select-swatch-host:focus-visible {
+  background: transparent;
+  color: inherit;
+}
+
+/* Don’t stack .theme-select field chrome on top of the swatch (App still passes .theme-select). */
+button.theme-select.themed-select-swatch-host.themed-select-trigger--theme {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: inherit;
+}
+
+button.theme-select.themed-select-swatch-host.themed-select-trigger--theme:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+/* Shared layout for all theme swatch rows */
+button.themed-select-swatch-host .themed-select-theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 2.6rem;
+  width: 100%;
+  text-align: left;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    filter 0.12s ease;
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.35rem 0.55rem 0.5rem;
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch__name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch__sub {
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+/* --- appGradient: full-page gradient, accent top bar (original look) */
+button.themed-select-swatch-host .themed-select-theme-swatch--app-gradient {
+  border: 1px solid var(--app-border);
+  background: linear-gradient(135deg, var(--app-bg-start), var(--app-bg-mid) 50%, var(--app-bg-end));
+  color: var(--app-text);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 5%, transparent),
+    0 1px 2px var(--app-shadow);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--app-gradient .themed-select-theme-swatch__bar {
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, var(--app-accent), var(--app-accent-strong));
+  flex-shrink: 0;
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--app-gradient .themed-select-theme-swatch__name {
+  color: var(--app-text);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--app-gradient .themed-select-theme-swatch__sub {
+  color: color-mix(in srgb, var(--metro-pulse-down) 48%, var(--app-muted) 52%);
+}
+
+button.themed-select-swatch-host:hover .themed-select-theme-swatch--app-gradient,
+button.themed-select-swatch-host:focus-visible .themed-select-theme-swatch--app-gradient {
+  border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-border) 52%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 5%, transparent),
+    0 2px 10px var(--app-shadow);
+  filter: brightness(1.02);
+}
+
+button.themed-select-swatch-host.is-active .themed-select-theme-swatch--app-gradient,
+button.themed-select-swatch-host.themed-select-trigger--theme .themed-select-theme-swatch--app-gradient {
+  border-color: color-mix(in srgb, var(--app-accent) 52%, var(--app-border) 48%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 4%, transparent),
+    0 0 0 1px var(--app-accent),
+    0 6px 20px var(--app-shadow);
+  filter: none;
+}
+
+/* shared: down/up pulse strip (50/50) */
+button.themed-select-swatch-host .themed-select-theme-swatch--visualizer .themed-select-theme-swatch__bar,
+button.themed-select-swatch-host .themed-select-theme-swatch--frame .themed-select-theme-swatch__bar,
+button.themed-select-swatch-host .themed-select-theme-swatch--select .themed-select-theme-swatch__bar {
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    var(--metro-pulse-down) 0%,
+    var(--metro-pulse-down) 50%,
+    var(--metro-pulse-up) 50%,
+    var(--metro-pulse-up) 100%
+  );
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--visualizer .themed-select-theme-swatch__bar,
+button.themed-select-swatch-host .themed-select-theme-swatch--frame .themed-select-theme-swatch__bar {
+  height: 3px;
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--select .themed-select-theme-swatch__bar {
+  height: 2px;
+}
+
+/* --- visualizer: metronome well surface, frame border, title in pulse-up; fallback to app-text if low contrast in some themes */
+button.themed-select-swatch-host .themed-select-theme-swatch--visualizer {
+  border: 1px solid color-mix(in srgb, var(--app-border) 76%, transparent);
+  background: var(--metro-visualizer-bg);
+  color: var(--app-text);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 4%, transparent),
+    0 1px 2px var(--app-shadow);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--visualizer .themed-select-theme-swatch__name {
+  /* Primary label: pulse-up, nudged with accent so it isn’t a flat “same blue” as other themes. */
+  color: color-mix(in srgb, var(--metro-pulse-up) 78%, var(--app-accent) 22%);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--visualizer .themed-select-theme-swatch__sub {
+  /* Description: down-beat + body — distinct per [data-theme], not a shared grey wash. */
+  color: color-mix(in srgb, var(--metro-pulse-down) 58%, var(--app-text) 42%);
+}
+
+button.themed-select-swatch-host:hover .themed-select-theme-swatch--visualizer,
+button.themed-select-swatch-host:focus-visible .themed-select-theme-swatch--visualizer {
+  border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-border) 52%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 4%, transparent),
+    0 2px 10px var(--app-shadow);
+  filter: brightness(1.02);
+}
+
+button.themed-select-swatch-host.is-active .themed-select-theme-swatch--visualizer,
+button.themed-select-swatch-host.themed-select-trigger--theme .themed-select-theme-swatch--visualizer {
+  border-color: color-mix(in srgb, var(--app-accent) 52%, var(--app-border) 48%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 3%, transparent),
+    0 0 0 1px var(--app-accent),
+    0 6px 20px var(--app-shadow);
+  filter: none;
+}
+
+/* --- frame: same panel treatment as .metronome-visualizer-frame + D/U + track strip (optional arm) */
+button.themed-select-swatch-host .themed-select-theme-swatch--frame {
+  border: 1px solid color-mix(in srgb, var(--app-border) 76%, transparent);
+  background: color-mix(in srgb, var(--app-panel-strong) 82%, transparent);
+  color: var(--app-text);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 4%, transparent),
+    0 1px 2px var(--app-shadow);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--frame .themed-select-theme-swatch__track {
+  display: block;
+  position: relative;
+  height: 2px;
+  width: 100%;
+  flex-shrink: 0;
+  background: var(--metro-visualizer-track);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--frame .themed-select-theme-swatch__track::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  top: 0;
+  width: 14%;
+  height: 100%;
+  background: var(--metro-visualizer-arm);
+  opacity: 0.9;
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--frame .themed-select-theme-swatch__name {
+  color: var(--app-text);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--frame .themed-select-theme-swatch__sub {
+  color: color-mix(in srgb, var(--metro-pulse-down) 50%, var(--app-muted) 50%);
+}
+
+button.themed-select-swatch-host:hover .themed-select-theme-swatch--frame,
+button.themed-select-swatch-host:focus-visible .themed-select-theme-swatch--frame {
+  border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-border) 52%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 4%, transparent),
+    0 2px 10px var(--app-shadow);
+  filter: brightness(1.02);
+}
+
+button.themed-select-swatch-host.is-active .themed-select-theme-swatch--frame,
+button.themed-select-swatch-host.themed-select-trigger--theme .themed-select-theme-swatch--frame {
+  border-color: color-mix(in srgb, var(--app-accent) 52%, var(--app-border) 48%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--app-text) 3%, transparent),
+    0 0 0 1px var(--app-accent),
+    0 6px 20px var(--app-shadow);
+  filter: none;
+}
+
+/* --- select: header / control field chrome */
+button.themed-select-swatch-host .themed-select-theme-swatch--select {
+  border: 1px solid var(--app-select-border);
+  background: var(--app-select-bg);
+  color: var(--app-select-text);
+  box-shadow: 0 1px 2px var(--app-shadow);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--select .themed-select-theme-swatch__name {
+  color: var(--app-select-text);
+}
+
+button.themed-select-swatch-host .themed-select-theme-swatch--select .themed-select-theme-swatch__sub {
+  color: color-mix(in srgb, var(--metro-pulse-down) 44%, var(--app-select-text) 56%);
+}
+
+button.themed-select-swatch-host:hover .themed-select-theme-swatch--select,
+button.themed-select-swatch-host:focus-visible .themed-select-theme-swatch--select {
+  border-color: color-mix(in srgb, var(--app-accent) 48%, var(--app-select-border) 52%);
+  box-shadow: 0 2px 10px var(--app-shadow);
+  filter: brightness(1.02);
+}
+
+button.themed-select-swatch-host.is-active .themed-select-theme-swatch--select,
+button.themed-select-swatch-host.themed-select-trigger--theme .themed-select-theme-swatch--select {
+  border-color: color-mix(in srgb, var(--app-accent) 52%, var(--app-select-border) 48%);
+  box-shadow:
+    0 0 0 1px var(--app-accent),
+    0 6px 20px var(--app-shadow);
+  filter: none;
+}
+
+.themed-select-chevron {
+  color: var(--app-muted);
+  opacity: 0.9;
 }
 
 .theme-vibe,

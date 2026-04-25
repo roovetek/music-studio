@@ -8,6 +8,7 @@ import {
 } from '../metronomeAccent';
 import { soundOutputTrim, type MetronomeSound } from './catalog';
 import { playKitBySoundId } from './kit';
+import { connectKitThroughTrim, connectPatternBus } from './metronomeOutputGraph';
 import {
   playDrumPatternStepAt as patternDrumStep,
   playGuitarStrumTokenAt as patternGuitarStrumToken,
@@ -73,17 +74,11 @@ class MetronomeAudioEngine {
   }
 
   private connectOutput(ctx: AudioContext, gainNode: GainNode, soundType: MetronomeSound) {
-    const outputTrim = ctx.createGain();
-    outputTrim.gain.value = soundOutputTrim[soundType];
-    gainNode.connect(outputTrim);
-    outputTrim.connect(this.getMasterGain(ctx));
+    connectKitThroughTrim(ctx, gainNode, soundOutputTrim[soundType], this.getMasterGain(ctx));
   }
 
   private connectPatternOutput(ctx: AudioContext, gainNode: GainNode) {
-    const trim = ctx.createGain();
-    trim.gain.value = 0.88;
-    gainNode.connect(trim);
-    trim.connect(this.getMasterGain(ctx));
+    connectPatternBus(ctx, gainNode, this.getMasterGain(ctx));
   }
 
   playCountInCueAt(index: number, time: number) {

@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react';
 import { Home } from './components/Home';
+import { DevAudioGraphLab } from './components/dev/DevAudioGraphLab';
 import { AdvancedMetronome } from './components/metronome/AdvancedMetronome';
+import { ThemedSelect } from './components/ui/ThemedSelect';
 import { appThemeOptions, defaultAppThemeId, type AppThemeId } from './lib/themes';
 
-type Page = 'home' | 'metronome-full';
+type Page = 'home' | 'metronome-full' | 'dev-audio-lab';
+
+const PAGE_STORAGE_KEY = 'music-studio-page';
+
+function readStoredPage(): Page {
+  if (typeof window === 'undefined') {
+    return 'home';
+  }
+  const raw = window.localStorage.getItem(PAGE_STORAGE_KEY);
+  if (raw === 'metronome-full' || raw === 'home' || raw === 'dev-audio-lab') {
+    return raw;
+  }
+  return 'home';
+}
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [currentPage, setCurrentPage] = useState<Page>(readStoredPage);
   const [currentTheme, setCurrentTheme] = useState<AppThemeId>(() => {
     if (typeof window === 'undefined') {
       return defaultAppThemeId;
@@ -18,6 +33,10 @@ function App() {
     }
     return defaultAppThemeId;
   });
+
+  useEffect(() => {
+    window.localStorage.setItem(PAGE_STORAGE_KEY, currentPage);
+  }, [currentPage]);
 
   useEffect(() => {
     window.localStorage.setItem('music-studio-theme', currentTheme);
@@ -48,6 +67,8 @@ function App() {
             <AdvancedMetronome />
           </div>
         );
+      case 'dev-audio-lab':
+        return <DevAudioGraphLab onBack={() => setCurrentPage('home')} />;
       default:
         return <Home onNavigate={setCurrentPage} />;
     }
@@ -69,19 +90,22 @@ function App() {
               >
                 Visual Style
               </label>
-              <select
+              <ThemedSelect
                 id="app-theme-select"
                 value={currentTheme}
-                onChange={(e) => setCurrentTheme(e.target.value as AppThemeId)}
-                className="theme-select w-full rounded-xl px-4 py-3 text-sm outline-none"
+                onChange={(v) => setCurrentTheme(v as AppThemeId)}
+                placement="down"
+                maxVh={50}
+                optionPreview="theme"
+                themeSwatchLayout="visualizer"
+                triggerClassName="theme-select themed-select-trigger w-full rounded-xl px-4 py-3 text-sm outline-none"
                 aria-label="Select app visual style"
-              >
-                {appThemeOptions.map((theme) => (
-                  <option key={theme.id} value={theme.id}>
-                    {`${theme.name} [${theme.description}]`}
-                  </option>
-                ))}
-              </select>
+                options={appThemeOptions.map((theme) => ({
+                  value: theme.id,
+                  label: theme.name,
+                  sublabel: theme.description,
+                }))}
+              />
             </div>
 
             <div className="theme-vibe-summary lg:pb-1">

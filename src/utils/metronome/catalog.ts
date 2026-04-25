@@ -122,14 +122,20 @@ export const soundOptions: SoundOption[] = [
   },
 ];
 
+/**
+ * Per-click trim after the kit synth, before the shared `METRONOME_MASTER_GAIN` in
+ * `metronomeOutputGraph` / `metronomeEngine` (roughly: peak-match to Studio Woodblock @ 0.78,
+ * -1 dBFS headroom, trim cap 1.2). Recompute with `npm run calibrate-metronome` (Node
+ * `web-audio-api` is approximate; spot-check in the browser if a sound is off).
+ */
 export const soundOutputTrim: Record<MetronomeSound, number> = {
   'woodblock': 0.78,
-  '808-rimshot': 0.68,
-  'synth-bell': 0.92,
-  'indian-classical': 0.94,
-  'jazz-brush': 0.84,
-  'blues-organ': 1,
-  'rnb-funk': 0.66,
-  'hiphop-clap': 0.6,
-  'analog-blip': 0.82,
+  '808-rimshot': 0.59,
+  'synth-bell': 0.734,
+  'indian-classical': 1.2,
+  'jazz-brush': 0.478,
+  'blues-organ': 0.64,
+  'rnb-funk': 1.2,
+  'hiphop-clap': 0.238,
+  'analog-blip': 0.717,
 };

@@ -101,13 +101,22 @@ export function playDrumPatternStepAt(
   }
 }
 
+/**
+ * Scales internal bol peaks so tabla beat source matches the same output target as kit clicks
+ * (`npm run calibrate-metronome`, pattern path + master in `metronomeOutputGraph`).
+ * Cap 6.5 in the script; Node polyfill is not identical to the browser.
+ */
+export const TABLA_BOL_GAIN = 6.5;
+
 export function playTablaBolAt(
   ctx: AudioContext,
   time: number,
   bolIndex: number,
   accentLevel: MetronomeAccent,
   out: ConnectPattern,
+  options?: { bolGain?: number },
 ) {
+  const gMul = options?.bolGain ?? TABLA_BOL_GAIN;
   const bol = (bolIndex % 4) === 0 ? 'ta' : (bolIndex % 4) === 3 ? 'na' : 'dhin';
   const o1 = ctx.createOscillator();
   const o2 = ctx.createOscillator();
@@ -120,7 +129,7 @@ export function playTablaBolAt(
   f2.type = 'bandpass';
 
   if (bol === 'ta') {
-    const peak = accentLevel === 'first' ? 0.22 : accentLevel === 'normal' ? 0.2 : 0.14;
+    const peak = (accentLevel === 'first' ? 0.22 : accentLevel === 'normal' ? 0.2 : 0.14) * gMul;
     o1.frequency.setValueAtTime(248, time);
     o1.frequency.exponentialRampToValueAtTime(200, time + 0.1);
     o2.frequency.setValueAtTime(480, time);
@@ -138,7 +147,7 @@ export function playTablaBolAt(
     f1.Q.value = 2.2;
     f2.frequency.value = 920;
     f2.Q.value = 2.6;
-    g.gain.setValueAtTime(accentLevel === 'first' ? 0.24 : 0.2, time);
+    g.gain.setValueAtTime((accentLevel === 'first' ? 0.24 : 0.2) * gMul, time);
     g.gain.exponentialRampToValueAtTime(0.01, time + 0.18);
   } else {
     o1.frequency.setValueAtTime(290, time);
@@ -149,7 +158,7 @@ export function playTablaBolAt(
     f1.Q.value = 0.6;
     f2.frequency.value = 1680;
     f2.Q.value = 2.8;
-    g.gain.setValueAtTime(0.2, time);
+    g.gain.setValueAtTime(0.2 * gMul, time);
     g.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
   }
 

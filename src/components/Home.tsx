@@ -1,7 +1,7 @@
 import { SlidersHorizontal } from 'lucide-react';
 
 interface HomeProps {
-  onNavigate: (page: 'metronome-full') => void;
+  onNavigate: (page: 'metronome-full' | 'dev-audio-lab') => void;
 }
 
 export const Home = ({ onNavigate }: HomeProps) => {
@@ -38,6 +38,18 @@ export const Home = ({ onNavigate }: HomeProps) => {
           </div>
         </button>
       </div>
+
+      {import.meta.env.DEV ? (
+        <p className="mt-8 text-center">
+          <button
+            type="button"
+            onClick={() => onNavigate('dev-audio-lab')}
+            className="text-sm text-stone-500 underline decoration-stone-400/50 underline-offset-2 hover:text-stone-800 dark:hover:text-stone-200"
+          >
+            Dev: metronome audio graph lab
+          </button>
+        </p>
+      ) : null}
     </div>
   );
 };

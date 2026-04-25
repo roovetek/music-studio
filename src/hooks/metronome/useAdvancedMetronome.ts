@@ -3,11 +3,12 @@ import {
   getGuitarPatternCellIndex,
   getGuitarStrumPattern,
   type GuitarStrumPatternId,
+  type StrumToken,
 } from '../../data/guitarStrumPatterns';
 import { getMetronomeAccentForStep, VOICE_COUNT_IN_UTTERANCE_VOLUME } from '../../utils/metronomeAccent';
 import { metronomeAudio, type MetronomeSound } from '../../utils/metronomeAudio';
 
-export type { GuitarStrumPatternId } from '../../data/guitarStrumPatterns';
+export type { GuitarStrumPatternId, StrumToken } from '../../data/guitarStrumPatterns';
 type PlaybackState = 'stopped' | 'lead-in' | 'playing';
 export type BeatSource =
   | 'sounds'
@@ -16,6 +17,7 @@ export type BeatSource =
   | 'tabla-bols'
   | 'guitar-strum'
   | 'reggae-one-drop'
+  | 'reggae-steppers-8'
   | 'ska-offbeat-chank'
   | 'bossa-8'
   | 'salsa-montuno-8'
@@ -26,6 +28,7 @@ export type BeatSource =
 
 const GROOVE_BEAT_SOURCE_PATTERN_ID = {
   'reggae-one-drop': 'reggae-offbeat',
+  'reggae-steppers-8': 'reggae-steppers-8',
   'ska-offbeat-chank': 'ska-chank',
   'bossa-8': 'bossa-nova-8',
   'salsa-montuno-8': 'montuno-8',
@@ -71,6 +74,25 @@ function computeStepAudioRoles(
       return 'ghost';
     }
     return 'hit';
+  });
+}
+
+function computeStepStrumTokens(
+  totalBeats: number,
+  beatSource: BeatSource,
+  guitarStrumPatternId: GuitarStrumPatternId,
+): StrumToken[] | undefined {
+  const grooveId = getGroovePatternIdForBeatSource(beatSource);
+  const isGridPattern = beatSource === 'guitar-strum' || grooveId !== null;
+  if (!isGridPattern) {
+    return undefined;
+  }
+  const patternId =
+    beatSource === 'guitar-strum' ? guitarStrumPatternId : (grooveId ?? 'old-faithful');
+  const gPat = getGuitarStrumPattern(patternId);
+  return Array.from({ length: totalBeats }, (_, step) => {
+    const gi = getGuitarPatternCellIndex(step, totalBeats, gPat.steps.length);
+    return gPat.steps[gi] ?? 'R';
   });
 }
 
@@ -172,6 +194,11 @@ export const useAdvancedMetronome = (
 
   const stepAudioRoles = useMemo(
     () => computeStepAudioRoles(totalBeats, beatSource, guitarStrumPatternId),
+    [totalBeats, beatSource, guitarStrumPatternId],
+  );
+
+  const stepStrumTokens = useMemo(
+    () => computeStepStrumTokens(totalBeats, beatSource, guitarStrumPatternId),
     [totalBeats, beatSource, guitarStrumPatternId],
   );
 
@@ -389,6 +416,7 @@ export const useAdvancedMetronome = (
             break;
           }
           case 'reggae-one-drop':
+          case 'reggae-steppers-8':
           case 'ska-offbeat-chank':
           case 'bossa-8':
           case 'salsa-montuno-8':
@@ -399,6 +427,7 @@ export const useAdvancedMetronome = (
             const cell = gPat.steps[gi] ?? 'R';
             switch (beatSource) {
               case 'reggae-one-drop':
+              case 'reggae-steppers-8':
                 metronomeAudio.playReggaeOneDropStepAt(t, cell, accentLevel);
                 break;
               case 'ska-offbeat-chank':
@@ -516,5 +545,6 @@ export const useAdvancedMetronome = (
     beatsPerBar,
     meterLabel: selectedMeterPreset.label,
     stepAudioRoles,
+    stepStrumTokens,
   };
 };

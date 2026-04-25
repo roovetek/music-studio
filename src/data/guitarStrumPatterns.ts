@@ -13,6 +13,7 @@ export type GuitarStrumPatternId =
   | 'folk-shuffle'
   | 'waltz-34'
   | 'reggae-offbeat'
+  | 'reggae-steppers-8'
   | 'ska-chank'
   | 'bossa-nova-8'
   | 'montuno-8'
@@ -86,6 +87,14 @@ export const GUITAR_STRUM_PATTERNS: GuitarStrumPatternDef[] = [
     notation: 'R R D R R R D R  (wires on 2 and 4)',
     bestFor: 'One-drop: chords on backbeats. Pair with 4/4 (eighth or sixteenth) meters.',
     steps: ['R', 'R', 'D', 'R', 'R', 'R', 'D', 'R'],
+  },
+  {
+    id: 'reggae-steppers-8',
+    feelId: 'reggae',
+    name: 'Reggae steppers (8th)',
+    notation: 'R U R U R U R U  (up on the offbeats / “&”)',
+    bestFor: 'Steppers: constant offbeat up-chank in the skank. Best with 4/4 (eighth or 16th).',
+    steps: ['R', 'U', 'R', 'U', 'R', 'U', 'R', 'U'],
   },
   {
     id: 'ska-chank',

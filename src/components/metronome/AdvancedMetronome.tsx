@@ -13,7 +13,10 @@ import {
   type MeterPresetId,
 } from '../../hooks/metronome/useAdvancedMetronome';
 import { soundGroupOrder, soundOptions, metronomeAudio } from '../../utils/metronomeAudio';
-import { useRef, useEffect, useState } from 'react';
+import { useFixedMenuPosition } from '../../hooks/useFixedMenuPosition';
+import { ThemedSelect, type ThemedSelectGroup } from '../ui/ThemedSelect';
+import { useRef, useEffect, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   MetronomeVisualizer,
   type VisualizerMode,
@@ -25,11 +28,53 @@ const BEAT_SOURCE_PATTERN_HINT: Partial<Record<BeatSource, string>> = {
   'violin-legato': '— — — —',
   'drums-pattern': 'K · · · S · K · K · · · S · K ·',
   'reggae-one-drop': 'R R D R R R D R',
+  'reggae-steppers-8': 'R U R U R U R U',
   'ska-offbeat-chank': 'R R U R R R U R',
   'bossa-8': 'D R D D R U D R',
   'salsa-montuno-8': 'D R D U D R D U',
   'samba-partido-8': 'D G D U D D U D',
 };
+
+const VISUAL_PULSE_OPTIONS: { value: VisualizerMode; label: string }[] = [
+  { value: 'tracker', label: 'Pulse Bar' },
+  { value: 'pendulum', label: 'Pendulum Swing' },
+  { value: 'bouncing-ball', label: 'Beat Bounce' },
+];
+
+const BEAT_SOURCE_SELECT_GROUPS: ThemedSelectGroup[] = [
+  {
+    label: 'Neutral',
+    options: [
+      { value: 'sounds', label: 'Sounds (pick a click below)' },
+      { value: 'vocal', label: 'Vocal Pulse' },
+      { value: 'syllables', label: 'Syllables (ta-ka-di-mi)' },
+    ],
+  },
+  {
+    label: 'Indian classical',
+    options: [{ value: 'tabla-bols', label: 'Tabla bols (ta · dhin · dhin · na)' }],
+  },
+  { label: 'Guitar', options: [{ value: 'guitar-strum', label: 'Strum pattern (down / up)' }] },
+  {
+    label: 'Reggae & Caribbean',
+    options: [
+      { value: 'reggae-one-drop', label: 'Reggae: one drop (8th) — organ skank' },
+      { value: 'reggae-steppers-8', label: 'Reggae: steppers (8th) — offbeat up-chank' },
+      { value: 'ska-offbeat-chank', label: 'Ska: offbeat chank (8th) — brassy chip' },
+    ],
+  },
+  {
+    label: 'Latin (groove)',
+    options: [
+      { value: 'bossa-8', label: 'Bossa nova (8th) — nylon pluck' },
+      { value: 'salsa-montuno-8', label: 'Salsa / montuno (8th) — piano' },
+      { value: 'samba-partido-8', label: 'Samba: partido alto (8th) — pandeiro' },
+    ],
+  },
+  { label: 'Piano', options: [{ value: 'piano-arpeggio', label: 'Arpeggio (C · E · G · C′)' }] },
+  { label: 'Violin', options: [{ value: 'violin-legato', label: 'Legato bow' }] },
+  { label: 'Drums', options: [{ value: 'drums-pattern', label: 'Syncopated groove' }] },
+];
 
 const SOUND_PATTERN_PLACEHOLDER: Partial<Record<BeatSource, string>> = {
   vocal: 'Vocal Pulse uses a smoother sustained vocal-style synthesized cue.',
@@ -40,6 +85,8 @@ const SOUND_PATTERN_PLACEHOLDER: Partial<Record<BeatSource, string>> = {
     'Strum by feel: pick a pattern (D/U, ghosts, rests). Synthesis emulates strum, palm ghost, and silence—swap in real samples from docs when ready.',
   'reggae-one-drop':
     'Dub/organ skank: low-mid body on hits, chiff on ghosts. Backbeats 2/4, rests on 1. Web Audio, not guitar.',
+  'reggae-steppers-8':
+    'Steppers: same organ engine with steady offbeat up-chanks. Pulse bar shows D vs U from the 8th grid; use 4/4 8th or 16th.',
   'ska-offbeat-chank': 'Brassy square chank; brighter on upstrokes, fast decay—Caribbean offbeat feel.',
   'bossa-8': 'Nylon pluck: soft triangle, longer ring; bossa/MPB syncopation (not strummed guitar).',
   'salsa-montuno-8': 'Piano-tumbao stab: detuned short piano slice for montuno (not strum).',
@@ -70,10 +117,33 @@ export const AdvancedMetronome = () => {
     stepsPerBeat,
     totalBeats,
     stepAudioRoles,
+    stepStrumTokens,
   } = useAdvancedMetronome(meterPresetId, true, beatSource, 'voice', guitarStrumPatternId);
   const [showSoundMenu, setShowSoundMenu] = useState(false);
   const [soundQuery, setSoundQuery] = useState('');
   const menuRef = useRef<HTMLDivElement>(null);
+  const soundMenuPanelRef = useRef<HTMLDivElement>(null);
+  const soundTriggerRef = useRef<HTMLButtonElement>(null);
+  const soundMenuPosition = useFixedMenuPosition(showSoundMenu, soundTriggerRef, 'up', 55);
+  const appShellEl =
+    typeof document !== 'undefined'
+      ? (document.querySelector('.app-shell') as HTMLElement | null)
+      : null;
+  const guitarStrumSelectGroups: ThemedSelectGroup[] = useMemo(
+    () =>
+      GUITAR_STRUM_FEELS.map((feel) => {
+        const options = GUITAR_STRUM_PATTERNS.filter((p) => p.feelId === feel.id).map((p) => ({
+          value: p.id,
+          label: p.name,
+        }));
+        return { label: feel.label, options };
+      }).filter((g) => g.options.length > 0),
+    [],
+  );
+  const meterSelectOptions = useMemo(
+    () => meterPresets.map((p) => ({ value: p.id, label: p.label })),
+    [],
+  );
 
   const formatGuitarStrumHint = (id: GuitarStrumPatternId) => {
     const steps = getGuitarStrumPattern(id).steps;
@@ -88,9 +158,11 @@ export const AdvancedMetronome = () => {
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setShowSoundMenu(false);
+      const t = event.target as Node;
+      if (menuRef.current?.contains(t) || soundMenuPanelRef.current?.contains(t)) {
+        return;
       }
+      setShowSoundMenu(false);
     }
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -133,6 +205,59 @@ export const AdvancedMetronome = () => {
     setSoundQuery('');
     metronomeAudio.playSound(soundId, 'none');
   };
+
+  const soundPickerMenuContent = (
+    <>
+      <div className="metronome-menu-header sticky top-0 z-10 p-2">
+        <input
+          type="search"
+          value={soundQuery}
+          onChange={(e) => setSoundQuery(e.target.value)}
+          placeholder="Search sounds, styles, or tags"
+          className="metronome-search w-full rounded-md px-3 py-2 text-sm outline-none"
+        />
+      </div>
+
+      <div className="space-y-3 p-1">
+        {groupedSoundOptions.length > 0 ? (
+          groupedSoundOptions.map((section) => (
+            <div key={section.group} className="space-y-1">
+              <div className="metronome-group-label px-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                {section.group}
+              </div>
+              {section.options.map((option) => (
+                <button
+                  type="button"
+                  key={option.id}
+                  onClick={() => handleSoundSelect(option.id)}
+                  className={`metronome-sound-option w-full text-left px-4 py-3 rounded-lg border transition-all duration-150 ${currentSound === option.id ? 'is-active' : ''}`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <div className="metronome-option-title text-sm font-semibold truncate">{option.name}</div>
+                        {option.recommended ? (
+                          <span className="metronome-badge rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]">
+                            Practice Pick
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="metronome-option-desc text-xs mt-0.5">{option.description}</div>
+                    </div>
+                    <div className="metronome-option-tag text-xs px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
+                      {option.mood}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ))
+        ) : (
+          <div className="metronome-empty-state px-3 py-6 text-center text-sm">No sounds match that search.</div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="relative w-full max-w-4xl mx-auto">
@@ -216,34 +341,28 @@ export const AdvancedMetronome = () => {
               <label className="metronome-field-label mb-2 block text-xs font-semibold uppercase tracking-[0.18em]">
                 Time Signature
               </label>
-              <select
+              <ThemedSelect
                 value={meterPresetId}
-                onChange={(e) => setMeterPresetId(e.target.value as MeterPresetId)}
-                className="metronome-select w-full rounded-xl px-4 py-3 text-sm outline-none"
+                onChange={(v) => setMeterPresetId(v as MeterPresetId)}
+                placement="down"
+                options={meterSelectOptions}
+                triggerClassName="metronome-select themed-select-trigger w-full rounded-xl px-4 py-3 text-sm outline-none"
                 aria-label="Select time signature"
-              >
-                {meterPresets.map((preset) => (
-                  <option key={preset.id} value={preset.id}>
-                    {preset.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             <div className="metronome-card rounded-2xl p-4 shadow-inner">
               <label className="metronome-field-label mb-2 block text-xs font-semibold uppercase tracking-[0.18em]">
-                Visual Pulse Style
+                Visual Pulse Mode
               </label>
-              <select
+              <ThemedSelect
                 value={visualizerMode}
-                onChange={(e) => setVisualizerMode(e.target.value as VisualizerMode)}
-                className="metronome-select w-full rounded-xl px-4 py-3 text-sm outline-none"
-                aria-label="Select visual pulse style"
-              >
-                <option value="tracker">Pulse Bar</option>
-                <option value="pendulum">Pendulum Swing</option>
-                <option value="bouncing-ball">Beat Bounce</option>
-              </select>
+                onChange={(v) => setVisualizerMode(v as VisualizerMode)}
+                placement="down"
+                options={VISUAL_PULSE_OPTIONS}
+                triggerClassName="metronome-select themed-select-trigger w-full rounded-xl px-4 py-3 text-sm outline-none"
+                aria-label="Select visual pulse mode"
+              />
             </div>
           </div>
 
@@ -265,6 +384,7 @@ export const AdvancedMetronome = () => {
               currentStepTime={currentStepTime}
               secondsPerStep={secondsPerStep}
               stepAudioRoles={stepAudioRoles}
+              stepStrumTokens={stepStrumTokens}
             />
           </div>
 
@@ -272,45 +392,18 @@ export const AdvancedMetronome = () => {
             <label className="metronome-field-label mb-2 block text-xs font-semibold uppercase tracking-[0.18em]">
               Beat Source
             </label>
-            <select
+            <ThemedSelect
               value={beatSource}
-              onChange={(e) => {
+              onChange={(v) => {
                 setShowSoundMenu(false);
-                setBeatSource(e.target.value as BeatSource);
+                setBeatSource(v as BeatSource);
               }}
-              className="metronome-select w-full rounded-xl px-4 py-3 text-sm outline-none"
+              groups={BEAT_SOURCE_SELECT_GROUPS}
+              placement="up"
+              maxVh={55}
+              triggerClassName="metronome-select themed-select-trigger w-full rounded-xl px-4 py-3 text-sm outline-none"
               aria-label="Select beat source"
-            >
-              <optgroup label="Neutral">
-                <option value="sounds">Sounds (pick a click below)</option>
-                <option value="vocal">Vocal Pulse</option>
-                <option value="syllables">Syllables (ta-ka-di-mi)</option>
-              </optgroup>
-              <optgroup label="Indian classical">
-                <option value="tabla-bols">Tabla bols (ta · dhin · dhin · na)</option>
-              </optgroup>
-              <optgroup label="Guitar">
-                <option value="guitar-strum">Strum pattern (down / up)</option>
-              </optgroup>
-              <optgroup label="Reggae & Caribbean">
-                <option value="reggae-one-drop">Reggae: one drop (8th) — organ skank</option>
-                <option value="ska-offbeat-chank">Ska: offbeat chank (8th) — brassy chip</option>
-              </optgroup>
-              <optgroup label="Latin (groove)">
-                <option value="bossa-8">Bossa nova (8th) — nylon pluck</option>
-                <option value="salsa-montuno-8">Salsa / montuno (8th) — piano</option>
-                <option value="samba-partido-8">Samba: partido alto (8th) — pandeiro</option>
-              </optgroup>
-              <optgroup label="Piano">
-                <option value="piano-arpeggio">Arpeggio (C · E · G · C′)</option>
-              </optgroup>
-              <optgroup label="Violin">
-                <option value="violin-legato">Legato bow</option>
-              </optgroup>
-              <optgroup label="Drums">
-                <option value="drums-pattern">Syncopated groove</option>
-              </optgroup>
-            </select>
+            />
             {beatSource === 'guitar-strum' || fixedGroovePatternId ? (
               <p className="metronome-pattern-hint mt-2 font-mono text-xs tracking-tight">
                 {activeGuitarPattern.name}: {formatGuitarStrumHint(displayGuitarPatternId)}
@@ -335,29 +428,16 @@ export const AdvancedMetronome = () => {
                 >
                   Strum feel and pattern
                 </label>
-                <select
+                <ThemedSelect
                   id="guitar-strum-pattern"
                   value={guitarStrumPatternId}
-                  onChange={(e) => setGuitarStrumPatternId(e.target.value as GuitarStrumPatternId)}
-                  className="metronome-select w-full rounded-xl px-4 py-3 text-sm outline-none"
+                  onChange={(v) => setGuitarStrumPatternId(v as GuitarStrumPatternId)}
+                  groups={guitarStrumSelectGroups}
+                  placement="up"
+                  maxVh={50}
+                  triggerClassName="metronome-select themed-select-trigger w-full rounded-xl px-4 py-3 text-sm outline-none"
                   aria-label="Guitar strum pattern by feel"
-                >
-                  {GUITAR_STRUM_FEELS.map((feel) => {
-                    const patterns = GUITAR_STRUM_PATTERNS.filter((p) => p.feelId === feel.id);
-                    if (patterns.length === 0) {
-                      return null;
-                    }
-                    return (
-                      <optgroup key={feel.id} label={feel.label}>
-                        {patterns.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
-                </select>
+                />
                 <p className="metronome-helper-copy text-xs leading-relaxed">
                   <span className="metronome-helper-strong">Best for: </span>
                   {activeGuitarPattern.bestFor}
@@ -387,6 +467,7 @@ export const AdvancedMetronome = () => {
               <div className="relative">
                 <button
                   type="button"
+                  ref={soundTriggerRef}
                   onClick={() => setShowSoundMenu(!showSoundMenu)}
                   className="metronome-pattern-trigger w-full flex items-center gap-3 rounded-xl px-4 py-3 transition-colors"
                 >
@@ -400,60 +481,27 @@ export const AdvancedMetronome = () => {
                   />
                 </button>
 
-                {showSoundMenu && (
-                  <div className="metronome-menu absolute top-full left-0 right-0 mt-2 rounded-lg p-2 z-50 max-h-80 overflow-y-auto transition-all duration-200 ease-out sm:min-w-[21rem]">
-                    <div className="metronome-menu-header sticky top-0 z-10 p-2">
-                      <input
-                        type="search"
-                        value={soundQuery}
-                        onChange={(e) => setSoundQuery(e.target.value)}
-                        placeholder="Search sounds, styles, or tags"
-                        className="metronome-search w-full rounded-md px-3 py-2 text-sm outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-3 p-1">
-                      {groupedSoundOptions.length > 0 ? (
-                        groupedSoundOptions.map((section) => (
-                          <div key={section.group} className="space-y-1">
-                            <div className="metronome-group-label px-2 pt-1 text-[11px] font-semibold uppercase tracking-[0.18em]">
-                              {section.group}
-                            </div>
-                            {section.options.map((option) => (
-                              <button
-                                type="button"
-                                key={option.id}
-                                onClick={() => handleSoundSelect(option.id)}
-                                className={`metronome-sound-option w-full text-left px-4 py-3 rounded-lg border transition-all duration-150 ${currentSound === option.id ? 'is-active' : ''}`}
-                              >
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <div className="metronome-option-title text-sm font-semibold truncate">{option.name}</div>
-                                      {option.recommended ? (
-                                        <span className="metronome-badge rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]">
-                                          Practice Pick
-                                        </span>
-                                      ) : null}
-                                    </div>
-                                    <div className="metronome-option-desc text-xs mt-0.5">{option.description}</div>
-                                  </div>
-                                  <div className="metronome-option-tag text-xs px-2 py-0.5 rounded-full whitespace-nowrap flex-shrink-0">
-                                    {option.mood}
-                                  </div>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="metronome-empty-state px-3 py-6 text-center text-sm">
-                          No sounds match that search.
+                {showSoundMenu &&
+                  (appShellEl
+                    ? createPortal(
+                        <div
+                          ref={soundMenuPanelRef}
+                          className="metronome-menu rounded-lg p-2 transition-all duration-200 ease-out"
+                          style={soundMenuPosition}
+                        >
+                          {soundPickerMenuContent}
+                        </div>,
+                        appShellEl,
+                      )
+                    : (
+                        <div
+                          ref={soundMenuPanelRef}
+                          className="metronome-menu rounded-lg p-2 transition-all duration-200 ease-out"
+                          style={soundMenuPosition}
+                        >
+                          {soundPickerMenuContent}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                )}
+                      ))}
               </div>
             ) : (
               <div className="metronome-muted-box rounded-xl px-4 py-3 text-sm shadow-inner">
