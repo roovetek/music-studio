@@ -1,7 +1,7 @@
-import { SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal, RadioReceiver } from 'lucide-react';
 
 interface HomeProps {
-  onNavigate: (page: 'metronome-full' | 'dev-audio-lab') => void;
+  onNavigate: (page: 'metronome-full' | 'dev-audio-lab' | 'fourier') => void;
 }
 
 export const Home = ({ onNavigate }: HomeProps) => {
@@ -16,7 +16,7 @@ export const Home = ({ onNavigate }: HomeProps) => {
         </p>
       </div>
 
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-xl mx-auto flex flex-col gap-4">
         <button
           type="button"
           onClick={() => onNavigate('metronome-full')}
@@ -34,6 +34,27 @@ export const Home = ({ onNavigate }: HomeProps) => {
             <p className="home-tile__copy leading-relaxed">
               Practice timing with expressive sound patterns, visual pulse choices, and
               clear beat divisions.
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigate('fourier')}
+          className="home-tile group relative overflow-hidden rounded-2xl p-8 text-left transition-all duration-300 hover:scale-[1.02]"
+        >
+          <div className="home-tile__glow absolute inset-0 transition-all duration-300" />
+
+          <div className="relative">
+            <div className="home-tile__icon mb-6 flex h-16 w-16 items-center justify-center rounded-xl transition-colors">
+              <RadioReceiver className="h-8 w-8" />
+            </div>
+
+            <h2 className="home-tile__title mb-3 text-2xl font-bold">Fourier &amp; spectrum</h2>
+
+            <p className="home-tile__copy leading-relaxed">
+              Inspect a single spectrum and a time–frequency view (STFT) with flexible
+              window and overlap, on any file your browser can decode.
             </p>
           </div>
         </button>

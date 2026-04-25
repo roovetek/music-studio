@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Home } from './components/Home';
 import { DevAudioGraphLab } from './components/dev/DevAudioGraphLab';
+import { FourierPage } from './components/fourier/FourierPage';
 import { AdvancedMetronome } from './components/metronome/AdvancedMetronome';
 import { ThemedSelect } from './components/ui/ThemedSelect';
 import { appThemeOptions, defaultAppThemeId, type AppThemeId } from './lib/themes';
 
-type Page = 'home' | 'metronome-full' | 'dev-audio-lab';
+type Page = 'home' | 'metronome-full' | 'dev-audio-lab' | 'fourier';
 
 const PAGE_STORAGE_KEY = 'music-studio-page';
 
@@ -14,7 +15,7 @@ function readStoredPage(): Page {
     return 'home';
   }
   const raw = window.localStorage.getItem(PAGE_STORAGE_KEY);
-  if (raw === 'metronome-full' || raw === 'home' || raw === 'dev-audio-lab') {
+  if (raw === 'metronome-full' || raw === 'home' || raw === 'dev-audio-lab' || raw === 'fourier') {
     return raw;
   }
   return 'home';
@@ -69,6 +70,8 @@ function App() {
         );
       case 'dev-audio-lab':
         return <DevAudioGraphLab onBack={() => setCurrentPage('home')} />;
+      case 'fourier':
+        return <FourierPage onBack={() => setCurrentPage('home')} />;
       default:
         return <Home onNavigate={setCurrentPage} />;
     }
