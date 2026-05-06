@@ -31,7 +31,7 @@ def _max_upload_bytes() -> int:
 def _cors_origins() -> list[str]:
     raw = os.environ.get(
         "FUSION_CORS_ORIGINS",
-        "http://localhost:5174,http://127.0.0.1:5174",
+        "http://localhost:5175,http://127.0.0.1:5175",
     )
     return [o.strip() for o in raw.split(",") if o.strip()]
 

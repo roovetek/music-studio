@@ -3,10 +3,11 @@ import { Home } from './components/Home';
 import { DevAudioGraphLab } from './components/dev/DevAudioGraphLab';
 import { FourierPage } from './components/fourier/FourierPage';
 import { AdvancedMetronome } from './components/metronome/AdvancedMetronome';
+import { SonicLabPage } from './components/sonicLab/SonicLabPage';
 import { ThemedSelect } from './components/ui/ThemedSelect';
 import { appThemeOptions, defaultAppThemeId, type AppThemeId } from './lib/themes';
 
-type Page = 'home' | 'metronome-full' | 'dev-audio-lab' | 'fourier';
+type Page = 'home' | 'metronome-full' | 'dev-audio-lab' | 'fourier' | 'sonic-lab';
 
 const PAGE_STORAGE_KEY = 'music-studio-page';
 
@@ -15,7 +16,7 @@ function readStoredPage(): Page {
     return 'home';
   }
   const raw = window.localStorage.getItem(PAGE_STORAGE_KEY);
-  if (raw === 'metronome-full' || raw === 'home' || raw === 'dev-audio-lab' || raw === 'fourier') {
+  if (raw === 'metronome-full' || raw === 'home' || raw === 'dev-audio-lab' || raw === 'fourier' || raw === 'sonic-lab') {
     return raw;
   }
   return 'home';
@@ -72,6 +73,8 @@ function App() {
         return <DevAudioGraphLab onBack={() => setCurrentPage('home')} />;
       case 'fourier':
         return <FourierPage onBack={() => setCurrentPage('home')} />;
+      case 'sonic-lab':
+        return <SonicLabPage onBack={() => setCurrentPage('home')} />;
       default:
         return <Home onNavigate={setCurrentPage} />;
     }

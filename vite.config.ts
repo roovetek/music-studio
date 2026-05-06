@@ -42,7 +42,8 @@ export default defineConfig(() => {
         manifest: {
           name: 'Music Studio',
           short_name: 'MusicStudio',
-          description: 'Audio tools: classic and studio metronomes with tempo control.',
+          description:
+            'Audio tools: studio metronome, Fourier spectrum lab, and Sonic Fingerprint visualizations.',
           theme_color: '#f2ebe1',
           background_color: '#ede4d6',
           display: 'standalone',
@@ -78,6 +79,14 @@ export default defineConfig(() => {
     ],
     server: {
       port: 5175,
+      proxy: {
+        // In dev, /api/* is proxied to the FastAPI backend on :8000.
+        // In production builds VITE_API_BASE_URL points to the deployed server.
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+      },
     },
     optimizeDeps: {
       exclude: ['lucide-react'],

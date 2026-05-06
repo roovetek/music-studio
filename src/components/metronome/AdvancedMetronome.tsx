@@ -45,7 +45,7 @@ const BEAT_SOURCE_SELECT_GROUPS: ThemedSelectGroup[] = [
   {
     label: 'Neutral',
     options: [
-      { value: 'sounds', label: 'Sounds (pick a click below)' },
+      { value: 'sounds', label: 'Sounds (Click from below options)' },
       { value: 'vocal', label: 'Vocal Pulse' },
       { value: 'syllables', label: 'Syllables (ta-ka-di-mi)' },
     ],

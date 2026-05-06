@@ -78,6 +78,6 @@ With lead-in enabled, the hook enters a **`lead-in`** state: optional `speechSyn
 - **Noise buffers** (e.g. syllable consonant burst, snare / hi-hat) are **cached by length** on the engine to avoid allocating `AudioBuffer` on every hit.
 - Pattern outputs use a separate bus trim (0.88) from kit per-sound trimming (see `connectPatternPathToDestination` in [`metronomeOutputGraph.ts`](../src/utils/metronome/metronomeOutputGraph.ts)).
 
-## Classic metronome
+## App surface
 
-This repo also ships a simpler “classic” metronome elsewhere in the app; the files above refer to the **Studio / Advanced** path. If you add features, keep shared audio concerns in the engine and accent modules to avoid duplicating Web Audio graph logic.
+The shipped metronome UI is the **Studio / Advanced** flow above (see [`AdvancedMetronome.tsx`](../src/components/metronome/AdvancedMetronome.tsx) from the home screen). If you add another metronome variant, keep shared Web Audio concerns in the engine and accent modules to avoid duplicating graph logic.

@@ -1,6 +1,8 @@
 # Fusion API (allin1)
 
-Local HTTP service that runs the [All-In-One Music Structure Analyzer](https://pypi.org/project/allin1/) (`pip install allin1`) so the Vite app can detect segment boundaries (intro, verse, chorus, etc.) and alignment points.
+> **Status:** experimental **stand-alone** service. The main Music Studio web app does **not** call this API yet (no `fusion` integration in `src/`). Useful if you want to experiment with segment detection (intro, verse, chorus, etc.) separately from the shipped UI.
+
+Local HTTP service that runs the [All-In-One Music Structure Analyzer](https://pypi.org/project/allin1/) (`pip install allin1`) for boundary and alignment metadata over HTTP.
 
 ## Setup
 
@@ -23,7 +25,7 @@ cd fusion
 uvicorn main:app --reload --host 127.0.0.1 --port 8001
 ```
 
-- **CORS:** By default, `http://localhost:5174` and `http://127.0.0.1:5174` are allowed (match Vite `server.port`). Override with `FUSION_CORS_ORIGINS` (comma-separated), e.g. `http://localhost:5174,https://yourapp.example`.
+- **CORS:** By default, `http://localhost:5175` and `http://127.0.0.1:5175` are allowed (match root [`vite.config.ts`](../vite.config.ts) `server.port`). Override with `FUSION_CORS_ORIGINS` (comma-separated), e.g. `http://localhost:5175,https://yourapp.example`.
 
 ## Where uploads go
 
@@ -44,7 +46,7 @@ Responses include `bpm` and `segments` with `label`, `start`, and `end` (seconds
 
 ## Frontend (Vite)
 
-The dev server listens on **5174** (see `vite.config.ts` in the repo root). Run `npm run dev` from the project root.
+If you wire a client later, the repo’s Vite dev server uses port **5175** (see root `vite.config.ts`). Run `npm run dev` from the project root.
 
 Only env vars prefixed with **`VITE_`** are exposed to the browser.
 

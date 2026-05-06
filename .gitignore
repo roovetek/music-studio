@@ -24,6 +24,13 @@ dist-ssr
 __pycache__/
 *.py[cod]
 
+# --- Python / FastAPI backend ---
+backend/.venv/
+backend/.uv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.egg-info/
+
 # Stray Android build artifacts (e.g. copies outside android/)
 *.apk
 *.aab

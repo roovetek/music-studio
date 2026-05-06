@@ -1,7 +1,7 @@
-import { SlidersHorizontal, RadioReceiver } from 'lucide-react';
+import { SlidersHorizontal, RadioReceiver, Fingerprint } from 'lucide-react';
 
 interface HomeProps {
-  onNavigate: (page: 'metronome-full' | 'dev-audio-lab' | 'fourier') => void;
+  onNavigate: (page: 'metronome-full' | 'dev-audio-lab' | 'fourier' | 'sonic-lab') => void;
 }
 
 export const Home = ({ onNavigate }: HomeProps) => {
@@ -23,14 +23,11 @@ export const Home = ({ onNavigate }: HomeProps) => {
           className="home-tile group relative overflow-hidden rounded-2xl p-8 text-left transition-all duration-300 hover:scale-[1.02]"
         >
           <div className="home-tile__glow absolute inset-0 transition-all duration-300" />
-
           <div className="relative">
             <div className="home-tile__icon mb-6 flex h-16 w-16 items-center justify-center rounded-xl transition-colors">
               <SlidersHorizontal className="h-8 w-8" />
             </div>
-
             <h2 className="home-tile__title mb-3 text-2xl font-bold">Studio Metronome</h2>
-
             <p className="home-tile__copy leading-relaxed">
               Practice timing with expressive sound patterns, visual pulse choices, and
               clear beat divisions.
@@ -44,17 +41,32 @@ export const Home = ({ onNavigate }: HomeProps) => {
           className="home-tile group relative overflow-hidden rounded-2xl p-8 text-left transition-all duration-300 hover:scale-[1.02]"
         >
           <div className="home-tile__glow absolute inset-0 transition-all duration-300" />
-
           <div className="relative">
             <div className="home-tile__icon mb-6 flex h-16 w-16 items-center justify-center rounded-xl transition-colors">
               <RadioReceiver className="h-8 w-8" />
             </div>
-
             <h2 className="home-tile__title mb-3 text-2xl font-bold">Fourier &amp; spectrum</h2>
-
             <p className="home-tile__copy leading-relaxed">
               Inspect a single spectrum and a time–frequency view (STFT) with flexible
               window and overlap, on any file your browser can decode.
+            </p>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onNavigate('sonic-lab')}
+          className="home-tile group relative overflow-hidden rounded-2xl p-8 text-left transition-all duration-300 hover:scale-[1.02]"
+        >
+          <div className="home-tile__glow absolute inset-0 transition-all duration-300" />
+          <div className="relative">
+            <div className="home-tile__icon mb-6 flex h-16 w-16 items-center justify-center rounded-xl transition-colors">
+              <Fingerprint className="h-8 w-8" />
+            </div>
+            <h2 className="home-tile__title mb-3 text-2xl font-bold">Sonic Fingerprint Lab</h2>
+            <p className="home-tile__copy leading-relaxed">
+              Upload audio and explore its shape: waveform, density cloud, Lissajous phase,
+              spectrogram, and mandala art. Compare against reference tones and chords.
             </p>
           </div>
         </button>

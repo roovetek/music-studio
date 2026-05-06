@@ -42,9 +42,12 @@ type PathKind = 'kit' | 'tabla';
 
 type DevAudioGraphLabProps = { onBack: () => void };
 
+type AnalyserFloatArray = Parameters<AnalyserNode['getFloatTimeDomainData']>[0];
+type AnalyserByteArray = Parameters<AnalyserNode['getByteFrequencyData']>[0];
+
 type OneShotSnapshot = {
-  time: Float32Array;
-  freq: Uint8Array;
+  time: AnalyserFloatArray;
+  freq: AnalyserByteArray;
   peak: number;
   rms12: number;
   atMs: number;
@@ -54,12 +57,12 @@ type OneShotSnapshot = {
 type CaptureState = {
   endAt: number;
   bestPeak: number;
-  bestTime: Float32Array | null;
-  bestFreq: Uint8Array | null;
+  bestTime: AnalyserFloatArray | null;
+  bestFreq: AnalyserByteArray | null;
 };
 
 function floatRms12AroundPeak(
-  d: Float32Array,
+  d: ArrayLike<number>,
   sampleRate: number,
   windowMs = 12,
 ): number {
@@ -89,7 +92,7 @@ function floatRms12AroundPeak(
 
 function drawTimeDomain(
   ctx: CanvasRenderingContext2D,
-  data: Float32Array,
+  data: ArrayLike<number>,
   w: number,
   h: number,
 ) {
@@ -119,7 +122,7 @@ function drawTimeDomain(
 
 function drawFrequency(
   ctx: CanvasRenderingContext2D,
-  data: Uint8Array,
+  data: ArrayLike<number>,
   w: number,
   h: number,
 ) {
@@ -194,8 +197,8 @@ export function DevAudioGraphLab({ onBack }: DevAudioGraphLabProps) {
   const freqCanvasRef = useRef<HTMLCanvasElement>(null);
   const snapTimeCanvasRef = useRef<HTMLCanvasElement>(null);
   const snapFreqCanvasRef = useRef<HTMLCanvasElement>(null);
-  const timeDataRef = useRef<Float32Array | null>(null);
-  const freqDataRef = useRef<Uint8Array | null>(null);
+  const timeDataRef = useRef<AnalyserFloatArray | null>(null);
+  const freqDataRef = useRef<AnalyserByteArray | null>(null);
   const captureRef = useRef<CaptureState | null>(null);
   const committedRef = useRef(true);
 
@@ -241,10 +244,10 @@ export function DevAudioGraphLab({ onBack }: DevAudioGraphLabProps) {
       return;
     }
     if (!timeDataRef.current) {
-      timeDataRef.current = new Float32Array(a.fftSize);
+      timeDataRef.current = new Float32Array(a.fftSize) as AnalyserFloatArray;
     }
     if (!freqDataRef.current) {
-      freqDataRef.current = new Uint8Array(a.frequencyBinCount);
+      freqDataRef.current = new Uint8Array(a.frequencyBinCount) as AnalyserByteArray;
     }
 
     const tick = () => {
@@ -272,8 +275,8 @@ export function DevAudioGraphLab({ onBack }: DevAudioGraphLabProps) {
         if (now < c.endAt) {
           if (m > c.bestPeak) {
             c.bestPeak = m;
-            c.bestTime = new Float32Array(at);
-            c.bestFreq = new Uint8Array(af);
+            c.bestTime = new Float32Array(at) as AnalyserFloatArray;
+            c.bestFreq = new Uint8Array(af) as AnalyserByteArray;
           }
         } else if (!committedRef.current) {
           committedRef.current = true;
@@ -464,13 +467,14 @@ export function DevAudioGraphLab({ onBack }: DevAudioGraphLabProps) {
     const sampleRate = 48000;
     const sec = 0.55;
     const off = new OAC(1, Math.ceil(sampleRate * sec), sampleRate) as OfflineAudioContext;
+    const offlineAsLive = off as unknown as AudioContext;
     const master = createMasterGain(off, off.destination);
     if (path === 'kit') {
-      playKitBySoundId(sound, off, 0, accent, (id, g) => {
+      playKitBySoundId(sound, offlineAsLive, 0, accent, (id, g) => {
         connectKitThroughTrim(off, g, soundOutputTrim[id], master);
       });
     } else {
-      playTablaBolAt(off, 0, bolIndex, accent, (g) => {
+      playTablaBolAt(offlineAsLive, 0, bolIndex, accent, (g) => {
         connectPatternBus(off, g, master);
       });
     }
