@@ -12,6 +12,8 @@
     "generate:icons": "node scripts/generate-pwa-icons.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
+    "playwright:install": "PLAYWRIGHT_BROWSERS_PATH=\"$PWD/.playwright-browsers\" npx playwright install chromium",
+    "screenshots:readme": "npm run build && PLAYWRIGHT_BROWSERS_PATH=\"$PWD/.playwright-browsers\" playwright test e2e/readme-screenshots.spec.ts",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "calibrate-metronome": "tsx scripts/calibrate-metronome-levels.ts"
   },
@@ -25,6 +27,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.0",
     "@eslint/js": "^9.9.1",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",

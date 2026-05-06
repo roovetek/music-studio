@@ -2,9 +2,25 @@
 
 Browser-based audio tools for practice and exploration: a **studio metronome**, a **Fourier / spectrum lab**, and **Sonic Fingerprint Lab** visualizations. Ships as a **PWA**, with an **optional FastAPI** service for richer spectrograms, and **Capacitor** wrappers for mobile.
 
-**Live demo:** `https://<your-github-username>.github.io/<repo>/` — replace with your GitHub Pages URL after enabling Pages on the `deploy` branch.
+**Live site:** [roovetek.github.io/music-studio](https://roovetek.github.io/music-studio/)
 
-**Screenshots:** add 2–4 images under `docs/images/` (or your host of choice) and link them here to showcase the home screen, metronome, Fourier view, and Sonic Lab.
+The app is a **Progressive Web App (PWA)**. In Chromium-based browsers (Chrome, Edge, Brave), use the **install** or **open in app** affordance in the address bar to add it like a desktop app (standalone window, own taskbar icon). On Android, the browser usually offers **Add to Home screen**. On iOS Safari, use **Share → Add to Home Screen** for a similar full-screen experience. Offline behavior follows the service worker precache (see Web / PWA below).
+
+## Screenshots
+
+| Home | Studio metronome |
+| :--: | :--------------: |
+| ![Home screen – Audio Tools](docs/images/readme-home.png) | ![Studio metronome](docs/images/readme-metronome.png) |
+
+| Fourier & spectrum | Sonic Fingerprint Lab |
+| :----------------: | :-------------------: |
+| ![Fourier lab](docs/images/readme-fourier.png) | ![Sonic Fingerprint Lab](docs/images/readme-sonic-lab.png) |
+
+Regenerate these images after UI changes (one-time browser download: `npm run playwright:install`):
+
+`npm run screenshots:readme`
+
+This builds the app, starts `vite preview`, and writes PNGs under `docs/images/`.
 
 ## Features
 
@@ -37,7 +53,7 @@ npm run dev
 
 Opens the Vite dev server at **http://localhost:5175**.
 
-**Optional:** run the Sonic Lab backend in another terminal so `/api` (proxied in dev) is available — see [backend/README.md](backend/README.md).
+**Optional FastAPI (Sonic Lab spectrogram):** run the backend from [backend/README.md](backend/README.md) on port **8000**. In dev, the Sonic Lab **health** probe calls `http://127.0.0.1:8000/api/health` directly (CORS is allowed), so the terminal stays quiet when the API is stopped. Other `/api/*` calls still go through the Vite proxy when you use features that need them; expect a proxy error in the Vite log only if you trigger those without the server running.
 
 ## Quality (local checks)
 

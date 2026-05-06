@@ -142,7 +142,15 @@ export function SonicLabPage({ onBack }: Props) {
   // ─── FastAPI health probe ───────────────────────────────────────────
   useEffect(() => {
     const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? '';
-    const endpoint = apiBase ? `${apiBase}/api/health` : '/api/health';
+    // In dev without a deployed API base, hit FastAPI directly so Vite does not proxy
+    // /api/health (proxy ECONNREFUSED spams the dev server terminal when :8000 is down).
+    const devDirect =
+      import.meta.env.DEV && !apiBase ? 'http://127.0.0.1:8000' : '';
+    const endpoint = apiBase
+      ? `${apiBase.replace(/\/$/, '')}/api/health`
+      : devDirect
+        ? `${devDirect}/api/health`
+        : '/api/health';
     fetch(endpoint, { signal: AbortSignal.timeout(3000) })
       .then((r) => setApiStatus(r.ok ? 'online' : 'offline'))
       .catch(() => setApiStatus('offline'));
